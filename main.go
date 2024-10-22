@@ -22,17 +22,13 @@ func main() {
 	// router.Use(middleware.TokenAuthMiddleware())
 	// router.Use(middleware.LoggerMiddleware(logger))
 
-	routes.UserRoutes(router)
 	routes.CartRoutes(router)
-	// routes.TemplateRoute(router)
-	// routes.DeviceRoute(router)
-	// routes.AttendanceRoute(router)
-	// routes.SalaryRoute(router)
-	// routes.DeleteRoute(router)
-	// routes.NotificationRoute(router)
-	// routes.DocumentRoute(router)
-	// routes.WorklogRoutes(router)
-	// routes.BranchPreferenceRoute(router)
+	routes.CategoryRoutes(router)
+	routes.InventoryRoutes(router)
+	routes.OrderRoutes(router)
+	routes.ProductRoutes(router)
+	routes.UserRoutes(router)
+
 	config.ConnectDatabase()
 	router.Run(":3000")
 }
