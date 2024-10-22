@@ -1,10 +1,13 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"github.com/google/uuid"
+)
 
 type ShoppingCart struct {
-	gorm.Model
+	UUID      uuid.UUID  `gorm:"type:uuid;primaryKey;index"`
 	UserID    uint       `gorm:"not null"`
 	User      User       `gorm:"foreignKey:UserID"`
 	CartItems []CartItem `gorm:"foreignKey:CartID"`
+	// CartItems []CartItem `gorm:"foreignKey:CartID"`
 }

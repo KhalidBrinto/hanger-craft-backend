@@ -29,7 +29,7 @@ func ConnectDatabase() {
 
 	log.Println("Attempting to connect to db")
 	// dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
-	dsn := "host=localhost user=postgres password=root dbname=hanger-craft port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=admin dbname=hanger-craft port=5433 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:                 logger.Default.LogMode(logger.Error),
 		SkipDefaultTransaction: true,

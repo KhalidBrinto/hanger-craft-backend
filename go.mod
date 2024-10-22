@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-gonic/gin v1.10.0
+	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12

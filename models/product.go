@@ -13,7 +13,7 @@ type Product struct {
 	Barcode     *string        `gorm:"size:150" json:"barcode"`
 	Price       float64        `gorm:"not null" json:"price"`
 	Currency    string         `gorm:"size:3; not null" json:"currency"`
-	Images      pq.StringArray `json:"images"`
+	Images      pq.StringArray `gorm:"type:varchar[]" json:"images"`
 	CategoryID  uint           `gorm:"not null" json:"category_id"`
 	Category    Category       `gorm:"foreignKey:CategoryID" json:"category"`
 	Reviews     []Review       `gorm:"foreignKey:ProductID" json:"reviews"`

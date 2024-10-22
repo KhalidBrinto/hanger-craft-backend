@@ -23,6 +23,7 @@ func main() {
 	// router.Use(middleware.LoggerMiddleware(logger))
 
 	routes.UserRoutes(router)
+	routes.CartRoutes(router)
 	// routes.TemplateRoute(router)
 	// routes.DeviceRoute(router)
 	// routes.AttendanceRoute(router)
