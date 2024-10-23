@@ -7,8 +7,8 @@ import (
 )
 
 func InventoryRoutes(router *gin.Engine) {
-	inventory := router.Group("/inventory")
+	inventory := router.Group("/api/inventory")
 	{
-		inventory.POST("/restock", controllers.RestockProduct) // Add stock (restock)
+		inventory.POST("/restock/", controllers.RestockProduct) // Add stock (restock)
 	}
 }

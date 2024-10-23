@@ -14,6 +14,7 @@ func main() {
 
 	router := gin.New()
 	router.SetTrustedProxies(nil)
+	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
 	router.GET("/", func(ctx *gin.Context) { ctx.JSON(http.StatusOK, "Hanger Craft API Service health is OK") })

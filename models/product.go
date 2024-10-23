@@ -7,14 +7,14 @@ import (
 
 type Product struct {
 	gorm.Model
-	Name        string         `gorm:"size:150;not null" json:"name"`
-	Description string         `json:"description"`
-	SKU         string         `gorm:"size:150;not null;unique;index" json:"sku"`
-	Barcode     *string        `gorm:"size:150" json:"barcode"`
-	Price       float64        `gorm:"not null" json:"price"`
-	Currency    string         `gorm:"size:3; not null" json:"currency"`
-	Images      pq.StringArray `gorm:"type:varchar[]" json:"images"`
-	CategoryID  uint           `gorm:"not null" json:"category_id"`
+	Name        string `gorm:"size:150;not null"`
+	Description string
+	SKU         string         `gorm:"size:150;not null;unique;index"`
+	Barcode     *string        `gorm:"size:150"`
+	Price       float64        `gorm:"not null"`
+	Currency    string         `gorm:"size:3; not null"`
+	Images      pq.StringArray `gorm:"type:varchar[]"`
+	CategoryID  uint           `gorm:"not null"`
 	Category    Category       `gorm:"foreignKey:CategoryID" json:"category"`
 	Reviews     []Review       `gorm:"foreignKey:ProductID" json:"reviews"`
 }

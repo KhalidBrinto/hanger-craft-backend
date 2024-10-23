@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -19,6 +20,16 @@ func CreateProduct(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := config.DB.Create(&models.Inventory{
+		ProductID:  product.ID,
+		StockLevel: 0,
+		InOpen:     0,
+		ChangeType: "restock",
+		ChangeDate: time.Now(),
+	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

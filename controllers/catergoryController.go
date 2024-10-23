@@ -3,6 +3,7 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,10 @@ func CreateCategory(c *gin.Context) {
 
 	// Insert the category into the database
 	if err := config.DB.Create(&category).Error; err != nil {
+		if errors.Is(err, gorm.ErrCheckConstraintViolated) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "CategoryType must be in ['parent', 'child']"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

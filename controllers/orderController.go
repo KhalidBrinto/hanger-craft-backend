@@ -3,6 +3,8 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -31,26 +33,58 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(order.ID)
+
 	// Loop through the order items and create them, also update inventory for each product
 	for _, item := range order.OrderItems {
 		// Create order items
-		item.OrderID = order.ID // Assign order ID
-		if err := tx.Create(&item).Error; err != nil {
+		if err := tx.Create(&models.OrderItem{
+			OrderID:         order.ID,
+			ProductID:       item.ProductID,
+			Quantity:        item.Quantity,
+			PriceAtPurchase: item.PriceAtPurchase,
+		}).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create order items"})
 			return
 		}
 
-		// Update inventory by subtracting the ordered quantity
-		inventoryUpdate := models.Inventory{
-			ProductID:      item.ProductID,
-			QuantityChange: -item.Quantity, // Deduct stock
-			ChangeType:     "purchase",
-			ChangeDate:     time.Now(),
+		// Fetch the existing inventory record for the product
+		var inventory models.Inventory
+		if err := tx.Where("product_id = ?", item.ProductID).First(&inventory).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch inventory"})
+			return
 		}
-		if err := tx.Create(&inventoryUpdate).Error; err != nil {
+
+		// Check if there's enough stock to fulfill the order
+		if inventory.StockLevel < item.Quantity+inventory.InOpen {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough stock available"})
+			return
+		}
+
+		// Update inventory: subtract ordered quantity from InOpen and StockLevel
+		// inventory.StockLevel -= item.Quantity
+		inventory.InOpen += item.Quantity
+
+		// Log inventory change
+		inventoryUpdate := models.Inventory{
+			ProductID:  item.ProductID,
+			InOpen:     inventory.InOpen, // Updated in-open quantity
+			ChangeType: "purchase",       // Record the change type
+			ChangeDate: time.Now(),
+		}
+
+		if err := tx.Save(&inventory).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory"})
+			return
+		}
+
+		if err := tx.Create(&inventoryUpdate).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to log inventory change"})
 			return
 		}
 
@@ -60,7 +94,7 @@ func CreateOrder(c *gin.Context) {
 	// Commit the transaction
 	tx.Commit()
 
-	// Return the created order
+	// Return the created order and inventory updates
 	c.JSON(http.StatusOK, gin.H{"order": order, "inventory_updates": inventoryUpdates})
 }
 
@@ -85,24 +119,47 @@ func GetOrder(c *gin.Context) {
 
 // RestockProduct adds stock for a given product
 func RestockProduct(c *gin.Context) {
-	var inventory *models.Inventory
+	var inventoryRequest *models.Inventory
 
-	// Bind JSON request to inventory struct
-	if err := c.ShouldBindJSON(&inventory); err != nil {
+	// Bind JSON request to inventoryRequest struct
+	if err := c.ShouldBindJSON(&inventoryRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Ensure the change type is 'restock'
-	inventory.ChangeType = "restock"
-	inventory.ChangeDate = time.Now()
+	var existingInventory models.Inventory
 
-	// Create an inventory change record
-	if err := config.DB.Create(&inventory).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	// Check if an inventory record already exists for the given product
+	if err := config.DB.Where("product_id = ?", inventoryRequest.ProductID).First(&existingInventory).Error; err != nil {
+		// If no existing record, create a new one
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			inventoryRequest.ChangeType = "restock"
+			inventoryRequest.ChangeDate = time.Now()
+
+			// Create new inventory record
+			if err := config.DB.Create(&inventoryRequest).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory record"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Stock added successfully", "inventory": inventoryRequest})
+		} else {
+			// Handle other database errors
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		// If the inventory record exists, update stock levels
+		existingInventory.StockLevel += inventoryRequest.StockLevel
+		existingInventory.ChangeType = "restock"
+		existingInventory.ChangeDate = time.Now() // Add new stock to the current stock level
+
+		// Save the updated stock levels
+		if err := config.DB.Save(&existingInventory).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory record"})
+			return
+		}
+
+		// Return success response
+		c.JSON(http.StatusOK, gin.H{"message": "Stock updated successfully", "inventory": existingInventory})
 	}
-
-	// Return success response
-	c.JSON(http.StatusOK, gin.H{"message": "Stock added successfully", "inventory": inventory})
 }
