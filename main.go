@@ -26,7 +26,9 @@ func main() {
 	routes.CategoryRoutes(router)
 	routes.InventoryRoutes(router)
 	routes.OrderRoutes(router)
+	routes.PaymentRoutes(router)
 	routes.ProductRoutes(router)
+	routes.ReviewRoutes(router)
 	routes.UserRoutes(router)
 
 	config.ConnectDatabase()
