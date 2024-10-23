@@ -7,7 +7,7 @@ import (
 )
 
 func ReviewRoutes(router *gin.Engine) {
-	reviews := router.Group("/reviews")
+	reviews := router.Group("/api/reviews")
 	{
 		reviews.POST("/", controllers.CreateReview)                          // Create a new review
 		reviews.GET("/:id", controllers.GetReview)                           // Get a review by ID

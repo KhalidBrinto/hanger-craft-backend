@@ -81,7 +81,7 @@ func GetOrder(c *gin.Context) {
 	var order *models.Order
 
 	// Preload OrderItems to include them in the response
-	if err := config.DB.Preload("OrderItems.Product").First(&order, orderID).Error; err != nil {
+	if err := config.DB.Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		} else {
