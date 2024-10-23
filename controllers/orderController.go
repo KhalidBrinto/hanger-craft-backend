@@ -15,13 +15,15 @@ import (
 // CreateOrder creates a new order with order items and updates the inventory
 func CreateOrder(c *gin.Context) {
 	var order *models.Order
-	var inventoryUpdates []*models.Inventory
+	// var inventoryUpdates []*models.Inventory
 
 	// Bind JSON request to order struct
 	if err := c.ShouldBindJSON(&order); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	order.OrderStatus = "pending"
 
 	// Start a database transaction
 	tx := config.DB.Begin()
@@ -33,21 +35,10 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(order.ID)
+	fmt.Printf("lenth of order items: %d\n", len(order.OrderItems))
 
 	// Loop through the order items and create them, also update inventory for each product
 	for _, item := range order.OrderItems {
-		// Create order items
-		if err := tx.Create(&models.OrderItem{
-			OrderID:         order.ID,
-			ProductID:       item.ProductID,
-			Quantity:        item.Quantity,
-			PriceAtPurchase: item.PriceAtPurchase,
-		}).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create order items"})
-			return
-		}
 
 		// Fetch the existing inventory record for the product
 		var inventory models.Inventory
@@ -65,16 +56,9 @@ func CreateOrder(c *gin.Context) {
 		}
 
 		// Update inventory: subtract ordered quantity from InOpen and StockLevel
-		// inventory.StockLevel -= item.Quantity
 		inventory.InOpen += item.Quantity
-
-		// Log inventory change
-		inventoryUpdate := models.Inventory{
-			ProductID:  item.ProductID,
-			InOpen:     inventory.InOpen, // Updated in-open quantity
-			ChangeType: "purchase",       // Record the change type
-			ChangeDate: time.Now(),
-		}
+		inventory.ChangeType = "purchase"
+		inventory.ChangeDate = time.Now()
 
 		if err := tx.Save(&inventory).Error; err != nil {
 			tx.Rollback()
@@ -82,20 +66,13 @@ func CreateOrder(c *gin.Context) {
 			return
 		}
 
-		if err := tx.Create(&inventoryUpdate).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to log inventory change"})
-			return
-		}
-
-		inventoryUpdates = append(inventoryUpdates, &inventoryUpdate)
 	}
 
 	// Commit the transaction
 	tx.Commit()
 
 	// Return the created order and inventory updates
-	c.JSON(http.StatusOK, gin.H{"order": order, "inventory_updates": inventoryUpdates})
+	c.JSON(http.StatusOK, gin.H{"order": order})
 }
 
 // GetOrder retrieves an order by ID along with its items
