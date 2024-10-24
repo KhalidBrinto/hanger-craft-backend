@@ -16,7 +16,6 @@ import (
 // CreateOrder creates a new order with order items and updates the inventory
 func CreateOrder(c *gin.Context) {
 	var order *models.Order
-	// var inventoryUpdates []*models.Inventory
 
 	// Bind JSON request to order struct
 	if err := c.ShouldBindJSON(&order); err != nil {
@@ -25,6 +24,7 @@ func CreateOrder(c *gin.Context) {
 	}
 	order.UserID = c.GetUint("user_id")
 	order.OrderStatus = "pending"
+	order.ItemPrice = 0.0
 
 	// Start a database transaction
 	tx := config.DB.Begin()
@@ -40,6 +40,7 @@ func CreateOrder(c *gin.Context) {
 
 	// Loop through the order items and create them, also update inventory for each product
 	for _, item := range order.OrderItems {
+		order.ItemPrice += item.PriceAtPurchase
 
 		// Fetch the existing inventory record for the product
 		var inventory models.Inventory
@@ -69,11 +70,19 @@ func CreateOrder(c *gin.Context) {
 
 	}
 
+	order.TotalPrice = order.ItemPrice - order.DiscountAmount + order.ShippingCost
+
+	if err := tx.Save(&order).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory"})
+		return
+	}
+
 	// Commit the transaction
 	tx.Commit()
 
 	// Return the created order and inventory updates
-	c.JSON(http.StatusOK, gin.H{"message": "order created successfully", "OrderID": order.ID})
+	c.JSON(http.StatusOK, gin.H{"message": "order created successfully", "OrderID": order.OrderIdentifier})
 }
 
 // GetOrder retrieves an order by ID along with its items
@@ -125,6 +134,71 @@ func GetOrders(c *gin.Context) {
 
 	// Return the order with its items
 	c.JSON(http.StatusOK, order)
+}
+
+// DispatchOrder updates an order status to shipped by its ID
+func DispatchOrder(c *gin.Context) {
+
+	orderID := c.Param("id")
+
+	// Fetch the category from the database
+	if err := config.DB.Model(&models.Order{}).Where("id = ?", orderID).Update("order_status", "shipped").Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Return the updated category
+	c.JSON(http.StatusOK, gin.H{"message": "order dispatched"})
+}
+
+// CancelOrder updates an order status to cancelled by its ID
+func CancelOrder(c *gin.Context) {
+
+	orderID := c.Param("id")
+
+	// Fetch the category from the database
+	if err := config.DB.Model(&models.Order{}).Where("id = ?", orderID).Update("order_status", "cancelled").Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Return the updated category
+	c.JSON(http.StatusOK, gin.H{"message": "order cancelled"})
+}
+
+// CancelOrder updates an order status to cancelled by its ID
+func UpdateOrderStatus(c *gin.Context) {
+
+	orderID := c.Param("id")
+
+	var payload struct {
+		OrderStatus string `binding:"required"`
+	}
+
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := config.DB.Model(&models.Order{}).Where("id = ?", orderID).Update("order_status", payload.OrderStatus).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Return the updated category
+	c.JSON(http.StatusOK, gin.H{"message": "order cancelled"})
 }
 
 // RestockProduct adds stock for a given product

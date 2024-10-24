@@ -50,6 +50,7 @@ type ShippingAddress struct {
 
 type OrderResponse struct {
 	gorm.Model
+	OrderIdentifier      string           `gorm:"type:varchar(8); not null;unique;index"`
 	UserID               uint             `gorm:"not null" json:"-"`
 	User                 User             `gorm:"foreignKey:UserID" json:"Buyer"`
 	OrderStatus          string           `gorm:"size:50;not null;check:order_status IN ('pending', 'shipped', 'delivered', 'cancelled')"`
