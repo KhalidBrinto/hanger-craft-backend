@@ -31,6 +31,7 @@ func main() {
 	routes.ProductRoutes(router)
 	routes.ReviewRoutes(router)
 	routes.UserRoutes(router)
+	routes.AdminDashboardRoutes(router)
 
 	config.ConnectDatabase()
 	router.Run(":3000")

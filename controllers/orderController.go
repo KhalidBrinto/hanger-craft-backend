@@ -23,7 +23,7 @@ func CreateOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	order.UserID = c.GetUint("user_id")
 	order.OrderStatus = "pending"
 
 	// Start a database transaction
@@ -77,7 +77,7 @@ func CreateOrder(c *gin.Context) {
 }
 
 // GetOrder retrieves an order by ID along with its items
-func GetOrder(c *gin.Context) {
+func GetOrderByID(c *gin.Context) {
 	orderID := c.Param("id")
 	var order *serializers.OrderResponse
 
@@ -89,6 +89,38 @@ func GetOrder(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
+	}
+
+	// Return the order with its items
+	c.JSON(http.StatusOK, order)
+}
+
+func GetOrders(c *gin.Context) {
+	var order []*serializers.OrderResponse
+
+	if c.GetString("role") == "admin" {
+
+		// Preload OrderItems to include them in the response
+		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC").First(&order).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+	} else {
+		// Preload OrderItems to include them in the response
+		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Where("user_id = ?", c.GetUint("user_id")).Order("created_at DESC").First(&order).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
 	}
 
 	// Return the order with its items
