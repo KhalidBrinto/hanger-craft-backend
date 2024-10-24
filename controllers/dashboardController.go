@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,28 +33,42 @@ func GetStats(c *gin.Context) {
 
 // GetMonthlySales returns total sales for each month of the current year
 func GetMonthlySales(c *gin.Context) {
-	var monthlySales []struct {
-		Month int     `json:"month"`
-		Sales float64 `json:"sales"`
+	var monthlySales struct {
+		Total     int
+		Completed int
+		Pending   int
+		Cancelled int
 	}
 
+	currentMonth := int(time.Now().Month())
 	currentYear := time.Now().Year()
+	if c.Query("month") != "" {
+		currentMonth, _ = strconv.Atoi(c.Query("month"))
+	}
 
 	// Query to get monthly sales for the current year
 	if err := config.DB.Raw(`
-		SELECT 
-			EXTRACT(MONTH FROM created_at) AS month, 
-			SUM(total_price) AS sales
+		SELECT
+			COUNT(id) as total,
+			SUM(CASE WHEN order_status = 'delivered' THEN 1 ELSE 0 END) as completed,
+			SUM(CASE WHEN order_status = 'pending' THEN 1 ELSE 0 END) as pending,
+			SUM(CASE WHEN order_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
 		FROM orders
-		WHERE EXTRACT(YEAR FROM created_at) = ?
-		GROUP BY month
-		ORDER BY month`, currentYear).Scan(&monthlySales).Error; err != nil {
+		WHERE EXTRACT(MONTH FROM created_at) = ? AND
+		EXTRACT(YEAR FROM created_at) = ?`, currentMonth, currentYear).Find(&monthlySales).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve monthly sales"})
 		return
 	}
 
+	if monthlySales.Total == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No data found"})
+	}
 	// Return the result
-	c.JSON(http.StatusOK, gin.H{"monthly_sales": monthlySales})
+	c.JSON(http.StatusOK, gin.H{
+		"Completed": (monthlySales.Completed / monthlySales.Total) * 100,
+		"Pending":   (monthlySales.Pending / monthlySales.Total) * 100,
+		"Cancelled": (monthlySales.Cancelled / monthlySales.Total) * 100,
+	})
 }
 
 // GetYearlyRevenue returns the revenue for the past 12 months
