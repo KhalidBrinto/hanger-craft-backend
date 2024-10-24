@@ -25,5 +25,5 @@ func CreateShippingAddress(c *gin.Context) {
 	}
 
 	// Return the created shipping address
-	c.JSON(http.StatusOK, gin.H{"shipping_address": shippingAddress})
+	c.JSON(http.StatusOK, gin.H{"message": "shipping address created successfully"})
 }

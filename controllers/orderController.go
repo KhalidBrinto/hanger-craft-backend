@@ -3,6 +3,7 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"backend/serializers"
 	"errors"
 	"fmt"
 	"net/http"
@@ -72,16 +73,16 @@ func CreateOrder(c *gin.Context) {
 	tx.Commit()
 
 	// Return the created order and inventory updates
-	c.JSON(http.StatusOK, gin.H{"order": order})
+	c.JSON(http.StatusOK, gin.H{"message": "order created successfully", "OrderID": order.ID})
 }
 
 // GetOrder retrieves an order by ID along with its items
 func GetOrder(c *gin.Context) {
 	orderID := c.Param("id")
-	var order *models.Order
+	var order *serializers.OrderResponse
 
 	// Preload OrderItems to include them in the response
-	if err := config.DB.Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
+	if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		} else {

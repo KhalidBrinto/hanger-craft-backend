@@ -31,7 +31,7 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	// Return the newly created category
-	c.JSON(http.StatusOK, category)
+	c.JSON(http.StatusOK, gin.H{"message": "category created successfully"})
 }
 
 // GetCategories retrieves all categories with their products

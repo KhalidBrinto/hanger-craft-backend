@@ -28,7 +28,7 @@ func CreateShoppingCart(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, shoppingCart)
+	c.JSON(http.StatusOK, gin.H{"message": "shopping cart created successfully"})
 }
 
 // GetShoppingCartByUserID retrieves the shopping cart by user ID and includes its items

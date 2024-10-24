@@ -3,6 +3,7 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"backend/serializers"
 	"net/http"
 	"time"
 
@@ -32,7 +33,7 @@ func CreateReview(c *gin.Context) {
 	}
 
 	// Return the created review
-	c.JSON(http.StatusOK, gin.H{"review": review})
+	c.JSON(http.StatusOK, gin.H{"message": "review recorded successfully"})
 }
 
 // GetReview retrieves a review by its ID
@@ -57,10 +58,10 @@ func GetReview(c *gin.Context) {
 // GetReviewsByProduct retrieves all reviews for a specific product
 func GetReviewsByProduct(c *gin.Context) {
 	productID := c.Param("product_id")
-	var reviews []*models.Review
+	var reviews *serializers.ReviewResponse
 
 	// Find all reviews for the specified product ID
-	if err := config.DB.Where("product_id = ?", productID).Preload("User").Find(&reviews).Error; err != nil {
+	if err := config.DB.Model(&models.Review{}).Where("product_id = ?", productID).Preload("User").Find(&reviews).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "No reviews found for this product"})
 		} else {

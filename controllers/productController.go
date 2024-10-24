@@ -34,7 +34,7 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, product)
+	c.JSON(http.StatusOK, gin.H{"message": "Product added successfully"})
 }
 
 // GetProducts retrieves all products with their category and reviews
