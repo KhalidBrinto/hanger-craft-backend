@@ -58,10 +58,10 @@ func GetReview(c *gin.Context) {
 // GetReviewsByProduct retrieves all reviews for a specific product
 func GetReviewsByProduct(c *gin.Context) {
 	productID := c.Param("product_id")
-	var reviews *serializers.ReviewResponse
+	var reviews []*serializers.ReviewResponse
 
 	// Find all reviews for the specified product ID
-	if err := config.DB.Model(&models.Review{}).Where("product_id = ?", productID).Preload("User").Find(&reviews).Error; err != nil {
+	if err := config.DB.Model(&models.Review{}).Where("product_id = ?", productID).Preload("User").Order("created_at desc").Find(&reviews).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "No reviews found for this product"})
 		} else {

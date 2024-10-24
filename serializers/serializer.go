@@ -1,6 +1,8 @@
 package serializers
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -64,4 +66,15 @@ type ReviewResponse struct {
 	Product   Product `gorm:"foreignKey:ProductID" json:"-"`
 	Rating    int     `gorm:"check:rating >= 1 AND rating <= 5"`
 	Comment   string  `gorm:"type:text"`
+}
+
+type InventoryResponse struct {
+	gorm.Model
+	ProductID         uint    `gorm:"not null" json:"-"`
+	Product           Product `gorm:"foreignKey:ProductID"`
+	StockLevel        int     `gorm:"not null"`
+	InOpen            int     `gorm:"not null"`
+	AvailableQuantity int
+	ChangeType        string `gorm:"size:50;not null;check:change_type IN ('restock', 'purchase')"`
+	ChangeDate        time.Time
 }

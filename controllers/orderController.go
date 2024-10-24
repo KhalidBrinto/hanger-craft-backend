@@ -141,3 +141,20 @@ func RestockProduct(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Stock updated successfully", "inventory": existingInventory})
 	}
 }
+
+// RestockProduct adds stock for a given product
+func GetInventory(c *gin.Context) {
+	var inventory []*serializers.InventoryResponse
+
+	// Preload OrderItems to include them in the response
+	if err := config.DB.Model(&models.Inventory{}).Preload("Product").Select("inventories.*, (stock_level-in_open) as available_quantity").Find(&inventory).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No inventory found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, inventory)
+}

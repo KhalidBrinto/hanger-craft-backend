@@ -10,5 +10,6 @@ func InventoryRoutes(router *gin.Engine) {
 	inventory := router.Group("/api/inventory")
 	{
 		inventory.POST("/restock/", controllers.RestockProduct) // Add stock (restock)
+		inventory.GET("", controllers.GetInventory)             // Add stock (restock)
 	}
 }
