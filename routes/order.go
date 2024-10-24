@@ -2,6 +2,7 @@ package routes
 
 import (
 	"backend/controllers"
+	"backend/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,7 +10,7 @@ import (
 func OrderRoutes(router *gin.Engine) {
 	orders := router.Group("/api/orders")
 	{
-		orders.POST("/", controllers.CreateOrder) // Create an order
-		orders.GET("/:id", controllers.GetOrder)  // Get an order by ID
+		orders.POST("/", middlewares.AuthMiddleware(), controllers.CreateOrder) // Create an order
+		orders.GET("/:id", middlewares.AuthMiddleware(), controllers.GetOrder)  // Get an order by ID
 	}
 }

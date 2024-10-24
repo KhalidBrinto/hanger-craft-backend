@@ -9,7 +9,8 @@ import (
 func UserRoutes(router *gin.Engine) {
 	userRoutes := router.Group("/api/user")
 	{
-		userRoutes.POST("/", controllers.CreateUser)
+		userRoutes.POST("/", controllers.RegisterCustomer)
+		userRoutes.POST("/login/", controllers.LoginUser)
 		// worklogRoutes.GET("/single/:day_identifier", controller.GetWorklogByDayIdentifier)
 		// worklogRoutes.GET("/stat", controller.GetWorklogStat)
 		// worklogRoutes.POST("/", controller.CreateWorklog)

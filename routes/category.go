@@ -2,6 +2,7 @@ package routes
 
 import (
 	"backend/controllers"
+	"backend/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,10 +10,10 @@ import (
 func CategoryRoutes(router *gin.Engine) {
 	categories := router.Group("/api/categories")
 	{
-		categories.POST("/", controllers.CreateCategory)
+		categories.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateCategory)
 		categories.GET("", controllers.GetCategories)
 		categories.GET("/:id", controllers.GetCategory)
-		categories.PUT("/:id", controllers.UpdateCategory)
-		categories.DELETE("/:id", controllers.DeleteCategory)
+		categories.PUT("/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateCategory)
+		categories.DELETE("/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DeleteCategory)
 	}
 }

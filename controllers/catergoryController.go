@@ -12,6 +12,7 @@ import (
 
 // CreateCategory creates a new category
 func CreateCategory(c *gin.Context) {
+
 	var category *models.Category
 
 	// Bind the incoming JSON to the Category struct
@@ -69,6 +70,7 @@ func GetCategory(c *gin.Context) {
 
 // UpdateCategory updates a category by its ID
 func UpdateCategory(c *gin.Context) {
+
 	categoryID := c.Param("id")
 	var category *models.Category
 
@@ -100,6 +102,7 @@ func UpdateCategory(c *gin.Context) {
 
 // DeleteCategory deletes a category by its ID
 func DeleteCategory(c *gin.Context) {
+
 	categoryID := c.Param("id")
 	var category *models.Category
 
