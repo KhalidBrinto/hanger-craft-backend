@@ -2,6 +2,7 @@ package routes
 
 import (
 	"backend/controllers"
+	"backend/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,7 +10,7 @@ import (
 func InventoryRoutes(router *gin.Engine) {
 	inventory := router.Group("/api/inventory")
 	{
-		inventory.POST("/restock/", controllers.RestockProduct) // Add stock (restock)
-		inventory.GET("", controllers.GetInventory)             // Add stock (restock)
+		inventory.POST("/restock/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.RestockProduct) // Add stock (restock)
+		inventory.GET("", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.GetInventory)             // Add stock (restock)
 	}
 }
