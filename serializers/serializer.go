@@ -35,6 +35,16 @@ type OrderItem struct {
 	PriceAtPurchase float64       `gorm:"not null"`
 }
 
+type Payment struct {
+	ID            uint    `gorm:"primarykey"`
+	PaymentMethod string  `gorm:"size:50;not null;check:payment_method IN ('credit_card', 'paypal', 'bank_transfer', 'cash_on_delivery')"`
+	PaymentStatus string  `gorm:"size:50;not null;check:payment_status IN ('pending', 'completed', 'failed')"`
+	Amount        float64 `gorm:"not null"`
+	PaymentDate   time.Time
+	OrderID       uint          `gorm:"not null" json:"-"`
+	Order         OrderResponse `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"-"`
+}
+
 type ShippingAddress struct {
 	gorm.Model
 	OrderID      uint   `gorm:"not null" json:"-"`
@@ -56,6 +66,7 @@ type OrderResponse struct {
 	TotalPrice           float64          `gorm:"not null"`
 	OrderItems           []OrderItem      `gorm:"foreignKey:OrderID"`
 	OrderShippingAddress *ShippingAddress `gorm:"foreignKey:OrderID"`
+	PaymentDetails       *Payment         `gorm:"foreignKey:OrderID"`
 }
 
 type ReviewResponse struct {
