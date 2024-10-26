@@ -28,4 +28,5 @@ RUN CG0_ENABLE=0 go build -o /main -ldflags="-w -s"
 
 # FROM golang:1.19-alpine 
 # COPY --from=build /main /main
+EXPOSE 3000
 CMD [ "/main" ]
