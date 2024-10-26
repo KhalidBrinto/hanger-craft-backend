@@ -73,6 +73,7 @@ func CreateOrder(c *gin.Context) {
 
 	order.TotalPrice = order.ItemPrice - order.DiscountAmount + order.ShippingCost
 
+	order.PaymentDetails.OrderID = order.ID
 	order.PaymentDetails.Amount = order.TotalPrice
 	order.PaymentDetails.TransanctionID = toPtr(utils.GenerateTransactionID())
 	order.PaymentDetails.PaymentStatus = "pending"
@@ -102,7 +103,7 @@ func GetOrderByID(c *gin.Context) {
 	var order *serializers.OrderResponse
 
 	// Preload OrderItems to include them in the response
-	if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
+	if err := config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		} else {
@@ -121,7 +122,7 @@ func GetOrders(c *gin.Context) {
 	if c.GetString("role") == "admin" {
 
 		// Preload OrderItems to include them in the response
-		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC").First(&order).Error; err != nil {
+		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC").First(&order).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 			} else {

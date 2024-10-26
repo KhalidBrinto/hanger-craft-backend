@@ -86,10 +86,10 @@ func UpdatePaymentStatus(c *gin.Context) {
 
 // AddPaymentOption handles creating a new payment option
 func AddPaymentOption(c *gin.Context) {
-	var payment *models.Payment
+	var paymentOption *models.PaymentOption
 
 	// Bind the JSON request to the Payment struct
-	if err := c.BindJSON(&payment); err != nil {
+	if err := c.BindJSON(&paymentOption); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -100,13 +100,13 @@ func AddPaymentOption(c *gin.Context) {
 	// }
 
 	// Create the payment in the database
-	if err := config.DB.Create(&payment).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create payment"})
+	if err := config.DB.Create(&paymentOption).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create payment option"})
 		return
 	}
 
 	// Return the created payment
-	c.JSON(http.StatusOK, gin.H{"payment": payment})
+	c.JSON(http.StatusOK, gin.H{"message": "payment option added"})
 }
 
 // GetAvailablePaymentOptions retrieves all payment options

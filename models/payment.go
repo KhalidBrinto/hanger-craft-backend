@@ -10,7 +10,7 @@ type Payment struct {
 	gorm.Model
 	PaymentMethod  string  `gorm:"size:50;not null;check:payment_method IN ('card', 'bkash', 'rocket', 'nagad', 'cash_on_delivery')"`
 	PaymentStatus  string  `gorm:"size:50;not null;check:payment_status IN ('pending', 'completed', 'failed')"`
-	Amount         float64 `gorm:"not null"`
+	Amount         float64 `gorm:"type:decimal(10,2);not null"`
 	TransanctionID *string `gorm:"size:11;not null"`
 	PaymentDate    *time.Time
 	OrderID        uint  `gorm:"not null"`

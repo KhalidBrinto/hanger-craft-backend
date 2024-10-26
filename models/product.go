@@ -11,7 +11,7 @@ type Product struct {
 	Description string         `gorm:"type:text"`
 	SKU         string         `gorm:"size:150;not null;unique;index"`
 	Barcode     *string        `gorm:"size:150"`
-	Price       float64        `gorm:"not null"`
+	Price       float64        `gorm:"type:decimal(10,2);not null"`
 	Currency    string         `gorm:"size:3; not null"`
 	Images      pq.StringArray `gorm:"type:varchar[]"`
 	CategoryID  uint           `gorm:"not null"`

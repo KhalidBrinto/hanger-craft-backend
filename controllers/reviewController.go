@@ -21,6 +21,8 @@ func CreateReview(c *gin.Context) {
 		return
 	}
 
+	review.UserID = c.GetUint("user_id")
+
 	// Set the review creation date if it's not provided
 	if review.CreatedAt.IsZero() {
 		review.CreatedAt = time.Now()
