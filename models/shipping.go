@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"encoding/json"
+
+	"gorm.io/gorm"
+)
 
 type ShippingAddress struct {
 	gorm.Model
@@ -15,4 +19,14 @@ type ShippingAddress struct {
 
 	User  User  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Order Order `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE"`
+}
+
+type ShippingOptions struct {
+	gorm.Model
+	ShipperID               *string
+	ShippingCarrier         *string         `gorm:"not null"`
+	ShipFromAddress         json.RawMessage `gorm:"type:jsonb"`
+	ShippingCost            float64         `gorm:"type:decimal(10,2)"`
+	EstimatedDeliveryDayMin int             `gorm:"type:int"` // Minimum estimated days for delivery
+	EstimatedDeliveryDayMax int             `gorm:"type:int"`
 }

@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"backend/serializers"
+	"backend/utils"
 	"errors"
 	"fmt"
 	"net/http"
@@ -72,9 +73,19 @@ func CreateOrder(c *gin.Context) {
 
 	order.TotalPrice = order.ItemPrice - order.DiscountAmount + order.ShippingCost
 
+	order.PaymentDetails.Amount = order.TotalPrice
+	order.PaymentDetails.TransanctionID = toPtr(utils.GenerateTransactionID())
+	order.PaymentDetails.PaymentStatus = "pending"
+
 	if err := tx.Save(&order).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory"})
+		return
+	}
+
+	if err := tx.Save(&order.PaymentDetails).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update payment details"})
 		return
 	}
 
