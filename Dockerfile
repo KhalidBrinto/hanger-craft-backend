@@ -14,7 +14,7 @@
 # CMD ["./runner"]
 # EXPOSE 3000
 
-FROM golang:1.19-alpine as dependencies
+FROM golang:1.23.2-alpine3.20 as dependencies
 
 WORKDIR /app
 COPY go.mod go.sum ./
