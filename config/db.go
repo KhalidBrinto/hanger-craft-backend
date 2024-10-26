@@ -1,7 +1,10 @@
 package config
 
 import (
+	"backend/models"
+	"fmt"
 	"log"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,19 +24,19 @@ type DatabaseConfiguration struct {
 }
 
 func ConnectDatabase() {
-	// dbUser := os.Getenv("DB_USER")
-	// dbPassword := os.Getenv("DB_PASS")
-	// dbHost := os.Getenv("DB_HOST")
-	// dbName := os.Getenv("DB_NAME")
-	// dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
 
 	log.Println("Attempting to connect to db")
-	// dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
-	dsn := "host=localhost user=postgres password=root dbname=hanger-craft port=5432 sslmode=disable"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
+	// dsn := "host=localhost user=postgres password=admin dbname=hanger-craft port=5433 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:                 logger.Default.LogMode(logger.Error),
 		SkipDefaultTransaction: true,
-		TranslateError:         true,
+		// TranslateError:         true,
 		// DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
@@ -42,8 +45,8 @@ func ConnectDatabase() {
 	} else {
 		log.Println("Database Connected Successfully !")
 	}
-	// log.Println("Attempting to migrate")
-	// db.AutoMigrate(models.CartItem{}, models.Category{}, models.Inventory{}, models.Order{}, models.OrderItem{}, models.Payment{}, models.Product{}, models.Review{}, models.ShippingAddress{}, models.ShoppingCart{}, models.User{}, models.ProductAttribute{})
-	// log.Println("Finished migration")
+	log.Println("Attempting to migrate")
+	db.AutoMigrate(models.CartItem{}, models.Category{}, models.Inventory{}, models.Order{}, models.OrderItem{}, models.Payment{}, models.PaymentOption{}, models.Product{}, models.Review{}, models.ShippingAddress{}, models.ShoppingCart{}, models.ShippingOptions{}, models.User{}, models.ProductAttribute{})
+	log.Println("Finished migration")
 	DB = db
 }
