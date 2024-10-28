@@ -10,6 +10,7 @@ var jwtSecret = []byte("hanger-craft-jwt-secret-key")
 
 // Claims structure for the JWT
 type Claims struct {
+	Name   string `json:"user_name"`
 	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
 	Role   string `json:"role"`
@@ -17,12 +18,13 @@ type Claims struct {
 }
 
 // GenerateJWT generates a JWT token for a given user
-func GenerateJWT(userID uint, email string, role string) (string, error) {
+func GenerateJWT(userID uint, email string, role string, name string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
 		Role:   role,
+		Name:   name,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
