@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
@@ -118,34 +119,29 @@ func GetOrderByID(c *gin.Context) {
 
 func GetOrders(c *gin.Context) {
 	var order []*serializers.OrderResponse
+	var model *gorm.DB
 
 	if c.GetString("role") == "admin" {
 
 		// Preload OrderItems to include them in the response
-		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC").First(&order).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			}
-			return
-		}
+		model = config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC")
 
 	} else {
 		// Preload OrderItems to include them in the response
-		if err := config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Where("user_id = ?", c.GetUint("user_id")).Order("created_at DESC").First(&order).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			}
-			return
-		}
+		model = config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Where("user_id = ?", c.GetUint("user_id")).Order("created_at DESC")
 
 	}
 
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&order)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
 	// Return the order with its items
-	c.JSON(http.StatusOK, order)
+	c.JSON(http.StatusOK, &page)
 }
 
 // DispatchOrder updates an order status to shipped by its ID

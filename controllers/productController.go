@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
@@ -41,12 +42,17 @@ func CreateProduct(c *gin.Context) {
 func GetProducts(c *gin.Context) {
 	var products []*models.Product
 
-	if err := config.DB.Preload("Category").Find(&products).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	model := config.DB.Model(&products).Preload("Category")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&products)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
 		return
 	}
 
-	c.JSON(http.StatusOK, products)
+	c.JSON(http.StatusOK, &page)
 }
 
 // GetProduct retrieves a single product by its ID
