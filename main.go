@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/config"
+	"backend/middlewares"
 	"backend/routes"
 	"net/http"
 
@@ -18,7 +19,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	router.GET("/", func(ctx *gin.Context) { ctx.JSON(http.StatusOK, "Hanger Craft API Service health is OK") })
-	// router.Use(middleware.CORSMiddleware())
+	router.Use(middlewares.CORSMiddleware())
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	// router.Use(middleware.TokenAuthMiddleware())
 	// router.Use(middleware.LoggerMiddleware(logger))
