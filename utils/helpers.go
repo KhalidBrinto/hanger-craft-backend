@@ -36,9 +36,7 @@ func ProductQueryParameterToMap(P Parameters) (map[string]interface{}, string) {
 	} else if P.StartPrice == nil && P.EndPrice != nil {
 		querystring = fmt.Sprintf("price <= %d", *P.EndPrice)
 	}
-	// if P.EmployeeUUID != "" {
-	// 	QueryMap["attendances.employee_uuid"] = P.EmployeeUUID
-	// }
+
 	return QueryMap, querystring
 }
 
