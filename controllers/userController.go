@@ -5,8 +5,10 @@ import (
 	"backend/models"
 	"backend/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -121,4 +123,40 @@ func LoginUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "access_token": token})
+}
+
+func GetCustomers(c *gin.Context) {
+	var customers []struct {
+		gorm.Model
+		Name         string  `gorm:"size:100;not null"`
+		Email        string  `gorm:"size:100;unique;not null"`
+		PhoneNumber  *string `gorm:"size:15"`
+		Role         string  `gorm:"size:20;default:'customer';not null"`
+		TotalOrders  int
+		LastPurchase *time.Time
+	}
+
+	// Use Preload to load associated Products for each category
+	model := config.DB.Debug().Model(&models.User{}).
+		Select(`
+		users.*,
+		count(orders.id) as total_orders,
+		max(orders.created_at) as last_purchase
+	`).
+		Joins("LEFT JOIN orders ON users.id = orders.user_id").
+		Where("role = ?", "customer").
+		Group("users.id").
+		Order("total_orders DESC").
+		Find(&customers)
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&customers)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
+	// Return the categories list
+	c.JSON(http.StatusOK, &page)
 }

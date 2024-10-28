@@ -13,6 +13,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/", controllers.RegisterCustomer)
 		userRoutes.POST("/login/", controllers.LoginUser)
 		userRoutes.PUT("/", middlewares.AuthMiddleware(), controllers.UpdateUser)
+		userRoutes.GET("/customer", middlewares.AuthMiddleware(), controllers.GetCustomers)
 		// worklogRoutes.GET("/single/:day_identifier", controller.GetWorklogByDayIdentifier)
 		// worklogRoutes.GET("/stat", controller.GetWorklogStat)
 		// worklogRoutes.POST("/", controller.CreateWorklog)
