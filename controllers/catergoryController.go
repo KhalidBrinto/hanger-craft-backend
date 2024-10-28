@@ -78,6 +78,20 @@ func GetCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, categories)
 }
 
+func GetSubCategories(c *gin.Context) {
+	parentID := c.Param("parent_id")
+	var categories []*models.Category
+
+	// Use Preload to load associated Products for each category
+	if err := config.DB.Preload("Products").Where("parent_id = ?", parentID).Find(&categories).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the categories list
+	c.JSON(http.StatusOK, categories)
+}
+
 // GetCategory retrieves a single category by its ID
 func GetCategory(c *gin.Context) {
 	categoryID := c.Param("id")
