@@ -17,6 +17,7 @@ type Product struct {
 	CategoryID  uint           `gorm:"not null"`
 	Category    Category       `gorm:"foreignKey:CategoryID"`
 	Status      *string        `gorm:"not null;check:status IN ('published', 'unpublished')"`
+	Featured    bool           `gorm:"default:false"`
 	Stock       uint           `gorm:"-"`
 }
 

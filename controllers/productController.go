@@ -3,6 +3,7 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"backend/utils"
 	"net/http"
 	"time"
 
@@ -41,6 +42,12 @@ func CreateProduct(c *gin.Context) {
 
 // GetProducts retrieves all products with their category and reviews
 func GetProducts(c *gin.Context) {
+	var params utils.Parameters
+	if c.Bind(&params) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
+		return
+	}
+	query, querstring := utils.ProductQueryParameterToMap(params)
 	type Inventory struct {
 		ProductID  uint           `gorm:"not null" json:"-"`
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
@@ -48,22 +55,33 @@ func GetProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name        string          `gorm:"size:150;not null"`
-		Description string          `gorm:"type:text"`
-		SKU         string          `gorm:"size:150;not null;unique;index"`
-		Barcode     *string         `gorm:"size:150"`
-		Price       float64         `gorm:"type:decimal(10,2);not null"`
-		Currency    string          `gorm:"size:3; not null"`
-		Images      pq.StringArray  `gorm:"type:varchar[]"`
-		CategoryID  uint            `gorm:"not null"`
-		Category    models.Category `gorm:"foreignKey:CategoryID"`
-		Status      *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory   *Inventory      `gorm:"foreignKey:ProductID"`
+		Name         string          `gorm:"size:150;not null"`
+		Description  string          `gorm:"type:text"`
+		SKU          string          `gorm:"size:150;not null;unique;index"`
+		Barcode      *string         `gorm:"size:150"`
+		Price        float64         `gorm:"type:decimal(10,2);not null"`
+		Currency     string          `gorm:"size:3; not null"`
+		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		CategoryID   uint            `gorm:"not null"`
+		Category     models.Category `gorm:"foreignKey:CategoryID"`
+		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
+		TotalReviews int
+		Rating       int
 	}
 
 	var products []*Product
+	var model *gorm.DB
 
-	model := config.DB.Model(&products).Preload("Category").Preload("Inventory")
+	model = config.DB.Debug().Model(&products).Preload("Category").Preload("Inventory").
+		Select(`products.*, 
+				count(reviews.id) as total_reviews,
+				AVG(reviews.rating)::int as rating
+			`).
+		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
+		Where(query).
+		Where(querstring).
+		Group("products.id")
 
 	pg := paginate.New()
 	page := pg.With(model).Request(c.Request).Response(&products)
