@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
@@ -90,4 +91,15 @@ type InventoryResponse struct {
 	AvailableQuantity int
 	ChangeType        string `gorm:"size:50;not null;check:change_type IN ('restock', 'purchase')"`
 	ChangeDate        time.Time
+}
+
+type SubCategory struct {
+	Name         null.String `binding:"required"`
+	CategoryType null.String
+	ParentID     *uint
+}
+type CategoryCreateSerializer struct {
+	Name         null.String  `binding:"required"`
+	CategoryType null.String  `binding:"required"`
+	SubCatergory *SubCategory `json:"SubCategory"`
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
@@ -26,7 +27,7 @@ func CreateProduct(c *gin.Context) {
 	}
 	if err := config.DB.Create(&models.Inventory{
 		ProductID:  product.ID,
-		StockLevel: 0,
+		StockLevel: int(product.Stock),
 		InOpen:     0,
 		ChangeType: "restock",
 		ChangeDate: time.Now(),
@@ -40,9 +41,29 @@ func CreateProduct(c *gin.Context) {
 
 // GetProducts retrieves all products with their category and reviews
 func GetProducts(c *gin.Context) {
-	var products []*models.Product
+	type Inventory struct {
+		ProductID  uint           `gorm:"not null" json:"-"`
+		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
+		StockLevel int            `gorm:"not null"`
+	}
+	type Product struct {
+		gorm.Model
+		Name        string          `gorm:"size:150;not null"`
+		Description string          `gorm:"type:text"`
+		SKU         string          `gorm:"size:150;not null;unique;index"`
+		Barcode     *string         `gorm:"size:150"`
+		Price       float64         `gorm:"type:decimal(10,2);not null"`
+		Currency    string          `gorm:"size:3; not null"`
+		Images      pq.StringArray  `gorm:"type:varchar[]"`
+		CategoryID  uint            `gorm:"not null"`
+		Category    models.Category `gorm:"foreignKey:CategoryID"`
+		Status      *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory   *Inventory      `gorm:"foreignKey:ProductID"`
+	}
 
-	model := config.DB.Model(&products).Preload("Category")
+	var products []*Product
+
+	model := config.DB.Model(&products).Preload("Category").Preload("Inventory")
 
 	pg := paginate.New()
 	page := pg.With(model).Request(c.Request).Response(&products)

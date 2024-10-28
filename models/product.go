@@ -16,6 +16,8 @@ type Product struct {
 	Images      pq.StringArray `gorm:"type:varchar[]"`
 	CategoryID  uint           `gorm:"not null"`
 	Category    Category       `gorm:"foreignKey:CategoryID"`
+	Status      *string        `gorm:"not null;check:status IN ('published', 'unpublished')"`
+	Stock       uint           `gorm:"-"`
 }
 
 type ProductAttribute struct {

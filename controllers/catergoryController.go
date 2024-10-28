@@ -3,26 +3,36 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
+	"backend/serializers"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
 // CreateCategory creates a new category
 func CreateCategory(c *gin.Context) {
 
-	var category *models.Category
+	var categoryRequest *serializers.CategoryCreateSerializer
 
 	// Bind the incoming JSON to the Category struct
-	if err := c.ShouldBindJSON(&category); err != nil {
+	if err := c.BindJSON(&categoryRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	category := &models.Category{
+		Name:         categoryRequest.Name,
+		CategoryType: categoryRequest.CategoryType,
+	}
+
+	tx := config.DB.Begin()
+
 	// Insert the category into the database
-	if err := config.DB.Create(&category).Error; err != nil {
+	if err := tx.Create(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrCheckConstraintViolated) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "CategoryType must be in ['parent', 'child']"})
 			return
@@ -30,6 +40,25 @@ func CreateCategory(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	if categoryRequest.SubCatergory != nil {
+		fmt.Println("creating sub category")
+		if err := tx.Create(&models.Category{
+			Name:         categoryRequest.SubCatergory.Name,
+			CategoryType: null.StringFrom("child"),
+			ParentID:     &category.ID,
+		}).Error; err != nil {
+			if errors.Is(err, gorm.ErrCheckConstraintViolated) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "CategoryType must be in ['parent', 'child']"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+	}
+
+	tx.Commit()
 
 	// Return the newly created category
 	c.JSON(http.StatusOK, gin.H{"message": "category created successfully"})
