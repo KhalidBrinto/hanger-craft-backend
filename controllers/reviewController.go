@@ -4,10 +4,13 @@ import (
 	"backend/config"
 	"backend/models"
 	"backend/serializers"
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
+	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
@@ -55,6 +58,51 @@ func GetReview(c *gin.Context) {
 
 	// Return the review with the associated user and product
 	c.JSON(http.StatusOK, review)
+}
+
+func GetCustomerReview(c *gin.Context) {
+	type Product struct {
+		ID          uint            `gorm:"primarykey"`
+		Name        string          `gorm:"size:150;not null"`
+		Description string          `gorm:"type:text"`
+		SKU         string          `gorm:"size:150;not null;unique;index"`
+		Barcode     *string         `gorm:"size:150"`
+		Price       float64         `gorm:"type:decimal(10,2);not null"`
+		Currency    string          `gorm:"size:3; not null"`
+		Images      pq.StringArray  `gorm:"type:varchar[]"`
+		CategoryID  uint            `gorm:"not null"`
+		Category    models.Category `gorm:"foreignKey:CategoryID" json:"-"`
+	}
+	type User struct {
+		ID          uint            `gorm:"primarykey"`
+		Name        string          `gorm:"size:100;not null"`
+		Email       string          `gorm:"size:100;unique;not null"`
+		Address     json.RawMessage `gorm:"type:jsonb"`
+		PhoneNumber *string         `gorm:"size:15"`
+	}
+	var reviews []*struct {
+		gorm.Model
+		UserID    uint    `gorm:"not null" json:"-"`
+		User      User    `gorm:"foreignKey:UserID"`
+		ProductID uint    `gorm:"not null" json:"-"`
+		Product   Product `gorm:"foreignKey:ProductID"`
+		Rating    int     `gorm:"check:rating >= 1 AND rating <= 5"`
+		Comment   string  `gorm:"type:text"`
+	}
+
+	// Find the review by ID and preload the associated user and product
+	model := config.DB.Model(&models.Review{}).Preload("User").Preload("Product").Order("created_at DESC")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&reviews)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
+	// Return the review with the associated user and product
+	c.JSON(http.StatusOK, &page)
 }
 
 // GetReviewsByProduct retrieves all reviews for a specific product
