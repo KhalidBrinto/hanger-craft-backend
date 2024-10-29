@@ -21,8 +21,6 @@ func main() {
 	router.GET("/", func(ctx *gin.Context) { ctx.JSON(http.StatusOK, "Hanger Craft API Service health is OK") })
 	router.Use(middlewares.CORSMiddleware())
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
-	// router.Use(middleware.TokenAuthMiddleware())
-	// router.Use(middleware.LoggerMiddleware(logger))
 
 	routes.CartRoutes(router)
 	routes.CategoryRoutes(router)
