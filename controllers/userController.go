@@ -24,11 +24,11 @@ func toPtr(s string) *string {
 
 func RegisterCustomer(c *gin.Context) {
 	var input struct {
-		Name        string          `json:"name" binding:"required"`
-		Email       string          `json:"email" binding:"required,email"`
-		Address     json.RawMessage `json:"address"`
-		Password    string          `json:"password" binding:"required"`
-		PhoneNumber string          `json:"phone_number"`
+		Name        string  `json:"name" binding:"required"`
+		Email       string  `json:"email" binding:"required,email"`
+		Address     *string `json:"address"`
+		Password    string  `json:"password" binding:"required"`
+		PhoneNumber string  `json:"phone_number"`
 	}
 
 	// Bind the JSON input to the struct
