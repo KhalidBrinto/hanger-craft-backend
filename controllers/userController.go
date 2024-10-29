@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"backend/utils"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -23,10 +24,11 @@ func toPtr(s string) *string {
 
 func RegisterCustomer(c *gin.Context) {
 	var input struct {
-		Name        string `json:"name" binding:"required"`
-		Email       string `json:"email" binding:"required,email"`
-		Password    string `json:"password" binding:"required"`
-		PhoneNumber string `json:"phone_number"`
+		Name        string          `json:"name" binding:"required"`
+		Email       string          `json:"email" binding:"required,email"`
+		Address     json.RawMessage `json:"address"`
+		Password    string          `json:"password" binding:"required"`
+		PhoneNumber string          `json:"phone_number"`
 	}
 
 	// Bind the JSON input to the struct
@@ -48,6 +50,7 @@ func RegisterCustomer(c *gin.Context) {
 		Email:        input.Email,
 		PasswordHash: toPtr(string(passwordHash)),
 		PhoneNumber:  toPtr(input.PhoneNumber),
+		Address:      input.Address,
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
@@ -131,7 +134,8 @@ func GetCustomers(c *gin.Context) {
 		Name         string  `gorm:"size:100;not null"`
 		Email        string  `gorm:"size:100;unique;not null"`
 		PhoneNumber  *string `gorm:"size:15"`
-		Role         string  `gorm:"size:20;default:'customer';not null"`
+		Address      json.RawMessage
+		Role         string `gorm:"size:20;default:'customer';not null"`
 		TotalOrders  int
 		LastPurchase *time.Time
 	}

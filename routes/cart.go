@@ -17,4 +17,12 @@ func CartRoutes(router *gin.Engine) {
 		cartRoutes.DELETE("/item/:id/", middlewares.AuthMiddleware(), controllers.RemoveCartItem)
 		cartRoutes.DELETE("/:uuid/", middlewares.AuthMiddleware(), controllers.DeleteShoppingCart)
 	}
+
+	wishlistRoutes := router.Group("/api/wish-list")
+	{
+		wishlistRoutes.POST("/", middlewares.AuthMiddleware(), controllers.AddWishlistItem)
+		wishlistRoutes.GET("", middlewares.AuthMiddleware(), controllers.GetWishlistByUserID)
+		wishlistRoutes.DELETE("/item/:id/", middlewares.AuthMiddleware(), controllers.RemoveWishlistItem)
+		wishlistRoutes.DELETE("/", middlewares.AuthMiddleware(), controllers.ClearWishlist)
+	}
 }
