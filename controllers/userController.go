@@ -160,3 +160,21 @@ func GetCustomers(c *gin.Context) {
 	// Return the categories list
 	c.JSON(http.StatusOK, &page)
 }
+
+func DeleteCustomer(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	var customer *models.User
+
+	// Find the review by ID
+	if err := config.DB.Delete(&customer, userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete user"})
+		}
+		return
+	}
+
+	// Return success message
+	c.JSON(http.StatusNoContent, gin.H{"message": "User deleted successfully"})
+}
