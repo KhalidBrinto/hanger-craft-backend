@@ -13,8 +13,8 @@ func OrderRoutes(router *gin.Engine) {
 		orders.POST("/", middlewares.AuthMiddleware(), controllers.CreateOrder)
 		orders.GET("/:id", middlewares.AuthMiddleware(), controllers.GetOrderByID)
 		orders.GET("", middlewares.AuthMiddleware(), controllers.GetOrders)
-		orders.PUT("/dispatch/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DispatchOrder)
-		orders.PUT("/cancel/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CancelOrder)
-		orders.PUT("/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateOrderStatus)
+		orders.PUT("/dispatch/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DispatchOrder)
+		orders.PUT("/cancel/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CancelOrder)
+		orders.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateOrderStatus)
 	}
 }
