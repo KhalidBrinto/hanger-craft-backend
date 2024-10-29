@@ -31,8 +31,7 @@ func ConnectDatabase() {
 	dbPort := os.Getenv("DB_PORT")
 
 	log.Println("Attempting to connect to db")
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
-	// dsn := "host=localhost user=postgres password=admin dbname=hanger-craft port=5433 sslmode=disable"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", dbHost, dbUser, dbPassword, dbName, dbPort)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:                 logger.Default.LogMode(logger.Error),
 		SkipDefaultTransaction: true,
@@ -46,7 +45,7 @@ func ConnectDatabase() {
 		log.Println("Database Connected Successfully !")
 	}
 	log.Println("Attempting to migrate")
-	db.AutoMigrate(models.CartItem{}, models.Category{}, models.Inventory{}, models.Order{}, models.OrderItem{}, models.Payment{}, models.PaymentOption{}, models.Product{}, models.Review{}, models.ShippingAddress{}, models.ShoppingCart{}, models.ShippingOptions{}, models.User{}, models.ProductAttribute{})
+	db.AutoMigrate(models.CartItem{}, models.Category{}, models.Inventory{}, models.Order{}, models.OrderItem{}, models.Payment{}, models.PaymentOption{}, models.Product{}, models.Review{}, models.ShippingAddress{}, models.ShoppingCart{}, models.ShippingOptions{}, models.User{}, models.ProductAttribute{}, models.WishList{})
 	log.Println("Finished migration")
 	DB = db
 }
