@@ -12,7 +12,7 @@ type CartItem struct {
 }
 type WishList struct {
 	ID        uint    `gorm:"primaryKey"`
-	ProductID uint    `gorm:"not null"`
+	ProductID uint    `gorm:"not null" json:"-"`
 	Product   Product `gorm:"foreignKey:ProductID"`
 	UserID    uint    `gorm:"not null" json:"-"`
 	User      User    `gorm:"foreignKey:UserID" json:"-"`
