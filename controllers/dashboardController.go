@@ -14,7 +14,7 @@ import (
 func GetStats(c *gin.Context) {
 	var response struct {
 		TotalOrder    int
-		TotalRevenue  int
+		TotalRevenue  float64
 		TotalCustomer int
 	}
 
@@ -85,10 +85,11 @@ func GetYearlyRevenue(c *gin.Context) {
 	// Query to get the revenue for the last 12 months
 	if err := config.DB.Raw(`
 		SELECT 
-			TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month, 
+			TO_CHAR(DATE_TRUNC('month', orders.created_at), 'Mon YYYY') AS month, 
 			SUM(total_price) AS revenue
 		FROM orders
-		WHERE created_at BETWEEN ? AND ?
+		LEFT JOIN payments ON payments.order_id = orders.id
+		WHERE orders.created_at BETWEEN ? AND ? AND payments.payment_status = 'completed'
 		GROUP BY month
 		ORDER BY month ASC`, startDate, now).Scan(&yearlyRevenue).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve yearly revenue"})

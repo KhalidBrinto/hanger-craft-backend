@@ -137,7 +137,7 @@ func GetCustomers(c *gin.Context) {
 	}
 
 	// Use Preload to load associated Products for each category
-	model := config.DB.Debug().Model(&models.User{}).
+	model := config.DB.Model(&models.User{}).
 		Select(`
 		users.*,
 		count(orders.id) as total_orders,

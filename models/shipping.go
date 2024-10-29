@@ -29,4 +29,5 @@ type ShippingOptions struct {
 	ShippingCost            float64         `gorm:"type:decimal(10,2)"`
 	EstimatedDeliveryDayMin int             `gorm:"type:int"` // Minimum estimated days for delivery
 	EstimatedDeliveryDayMax int             `gorm:"type:int"`
+	PaymentMethod           *string         `gorm:"size:50;not null;check:payment_method IN ('card', 'bkash', 'rocket', 'nagad', 'cash_on_delivery')"`
 }

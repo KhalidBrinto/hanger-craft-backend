@@ -73,7 +73,7 @@ func GetProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Debug().Model(&products).Preload("Category").Preload("Inventory").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating

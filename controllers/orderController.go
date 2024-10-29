@@ -18,6 +18,7 @@ import (
 // CreateOrder creates a new order with order items and updates the inventory
 func CreateOrder(c *gin.Context) {
 	var order *models.Order
+	var shipping_option *models.ShippingOptions
 
 	// Bind JSON request to order struct
 	if err := c.ShouldBindJSON(&order); err != nil {
@@ -27,6 +28,11 @@ func CreateOrder(c *gin.Context) {
 	order.UserID = c.GetUint("user_id")
 	order.OrderStatus = "pending"
 	order.ItemPrice = 0.0
+
+	if err := config.DB.Where("payment_method = ?", order.PaymentDetails.PaymentMethod).Find(&shipping_option).Error; err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "invalid payment method"})
+		return
+	}
 
 	// Start a database transaction
 	tx := config.DB.Begin()
@@ -42,7 +48,7 @@ func CreateOrder(c *gin.Context) {
 
 	// Loop through the order items and create them, also update inventory for each product
 	for _, item := range order.OrderItems {
-		order.ItemPrice += item.PriceAtPurchase
+		order.ItemPrice += item.PriceAtPurchase * float64(item.Quantity)
 
 		// Fetch the existing inventory record for the product
 		var inventory models.Inventory
