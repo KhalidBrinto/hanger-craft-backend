@@ -212,7 +212,7 @@ func UpdateOrderStatus(c *gin.Context) {
 	}
 
 	// Return the updated category
-	c.JSON(http.StatusOK, gin.H{"message": "order cancelled"})
+	c.JSON(http.StatusOK, gin.H{"message": "order status updated"})
 }
 
 // RestockProduct adds stock for a given product
