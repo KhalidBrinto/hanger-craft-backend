@@ -165,13 +165,39 @@ func DeleteCustomer(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	var customer *models.User
 
-	// Find the review by ID
-	if err := config.DB.Delete(&customer, userID).Error; err != nil {
+	if err := config.DB.First(&customer, userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		}
+		return
+	}
+
+	if err := config.DB.Delete(&customer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Return success message
+	c.JSON(http.StatusNoContent, gin.H{"message": "User deleted successfully"})
+}
+
+func DeleteUserByID(c *gin.Context) {
+	userID := c.Param("id")
+	var user *models.User
+
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		}
+		return
+	}
+
+	if err := config.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
