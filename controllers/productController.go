@@ -18,12 +18,12 @@ func CreateProduct(c *gin.Context) {
 	var product *models.Product
 
 	if err := c.BindJSON(&product); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if err := config.DB.Create(&product).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if err := config.DB.Create(&models.Inventory{
@@ -33,11 +33,11 @@ func CreateProduct(c *gin.Context) {
 		ChangeType: "restock",
 		ChangeDate: time.Now(),
 	}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Product added successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Product added successfully"})
 }
 
 // GetProducts retrieves all products with their category and reviews
@@ -82,6 +82,113 @@ func GetProducts(c *gin.Context) {
 		Where(query).
 		Where(querstring).
 		Group("products.id")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&products)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
+	c.JSON(http.StatusOK, &page)
+}
+func GetNewArrivalProducts(c *gin.Context) {
+	var params utils.Parameters
+	if c.Bind(&params) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
+		return
+	}
+	query, querstring := utils.ProductQueryParameterToMap(params)
+	type Inventory struct {
+		ProductID  uint           `gorm:"not null" json:"-"`
+		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
+		StockLevel int            `gorm:"not null"`
+	}
+	type Product struct {
+		gorm.Model
+		Name         string          `gorm:"size:150;not null"`
+		Description  string          `gorm:"type:text"`
+		SKU          string          `gorm:"size:150;not null;unique;index"`
+		Barcode      *string         `gorm:"size:150"`
+		Price        float64         `gorm:"type:decimal(10,2);not null"`
+		Currency     string          `gorm:"size:3; not null"`
+		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		CategoryID   uint            `gorm:"not null"`
+		Category     models.Category `gorm:"foreignKey:CategoryID"`
+		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
+		TotalReviews int
+		Rating       int
+	}
+
+	var products []*Product
+	var model *gorm.DB
+
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+		Select(`products.*, 
+				count(reviews.id) as total_reviews,
+				AVG(reviews.rating)::int as rating
+			`).
+		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
+		Where(query).
+		Where(querstring).
+		Group("products.id").
+		Order("products.created_at DESC")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&products)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
+	c.JSON(http.StatusOK, &page)
+}
+func GetTrendingProducts(c *gin.Context) {
+	var params utils.Parameters
+	if c.Bind(&params) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
+		return
+	}
+	query, querstring := utils.ProductQueryParameterToMap(params)
+	type Inventory struct {
+		ProductID  uint           `gorm:"not null" json:"-"`
+		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
+		StockLevel int            `gorm:"not null"`
+	}
+	type Product struct {
+		gorm.Model
+		Name         string          `gorm:"size:150;not null"`
+		Description  string          `gorm:"type:text"`
+		SKU          string          `gorm:"size:150;not null;unique;index"`
+		Barcode      *string         `gorm:"size:150"`
+		Price        float64         `gorm:"type:decimal(10,2);not null"`
+		Currency     string          `gorm:"size:3; not null"`
+		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		CategoryID   uint            `gorm:"not null"`
+		Category     models.Category `gorm:"foreignKey:CategoryID"`
+		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
+		TotalReviews int
+		Rating       int
+	}
+
+	var products []*Product
+	var model *gorm.DB
+
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+		Select(`products.*, 
+				count(reviews.id) as total_reviews,
+				AVG(reviews.rating)::int as rating
+			`).
+		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
+		Joins("LEFT JOIN order_items on products.id = order_items.product_id").
+		Where(query).
+		Where(querstring).
+		Group("products.id").
+		Order("COUNT(distinct order_items.order_id) DESC")
 
 	pg := paginate.New()
 	page := pg.With(model).Request(c.Request).Response(&products)

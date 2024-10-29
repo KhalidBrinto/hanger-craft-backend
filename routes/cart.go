@@ -13,7 +13,7 @@ func CartRoutes(router *gin.Engine) {
 		cartRoutes.POST("/", middlewares.AuthMiddleware(), controllers.CreateShoppingCart)
 		cartRoutes.GET("", middlewares.AuthMiddleware(), controllers.GetShoppingCartByUserID)
 		cartRoutes.POST("/item/", middlewares.AuthMiddleware(), controllers.AddCartItem)
-		cartRoutes.PUT("/item/:id", middlewares.AuthMiddleware(), controllers.UpdateCartItem)
+		cartRoutes.PUT("/item/:id/", middlewares.AuthMiddleware(), controllers.UpdateCartItem)
 		cartRoutes.DELETE("/item/:id/", middlewares.AuthMiddleware(), controllers.RemoveCartItem)
 		cartRoutes.DELETE("/:uuid/", middlewares.AuthMiddleware(), controllers.DeleteShoppingCart)
 	}
