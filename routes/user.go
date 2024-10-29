@@ -14,6 +14,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/login/", controllers.LoginUser)
 		userRoutes.PUT("/", middlewares.AuthMiddleware(), controllers.UpdateUser)
 		userRoutes.GET("/customer", middlewares.AuthMiddleware(), controllers.GetCustomers)
+		userRoutes.DELETE("/", middlewares.AuthMiddleware(), controllers.DeleteCustomer)
 		// worklogRoutes.GET("/single/:day_identifier", controller.GetWorklogByDayIdentifier)
 		// worklogRoutes.GET("/stat", controller.GetWorklogStat)
 		// worklogRoutes.POST("/", controller.CreateWorklog)
