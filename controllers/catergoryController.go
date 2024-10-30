@@ -45,9 +45,13 @@ func CreateCategory(c *gin.Context) {
 // GetCategories retrieves all categories with their products
 func GetCategories(c *gin.Context) {
 	var categories []*models.Category
+	querystring := ""
+	if c.Query("type") != "" {
+		querystring = "category_type = '" + c.Query("type") + "'"
+	}
 
 	// Use Preload to load associated Products for each category
-	if err := config.DB.Preload("Products").Find(&categories).Error; err != nil {
+	if err := config.DB.Preload("Products").Where(querystring).Find(&categories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
