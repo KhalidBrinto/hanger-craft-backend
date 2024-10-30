@@ -8,32 +8,77 @@ import (
 )
 
 type Parameters struct {
-	Featured   *bool   `form:"featured"`
-	StartPrice *int    `form:"start_price"`
-	EndPrice   *int    `form:"end_price"`
-	Status     *string `form:"status"`
+	Featured   string `form:"featured"`
+	CategoryID string `form:"category_id"`
+	StartPrice *int   `form:"start_price"`
+	EndPrice   *int   `form:"end_price"`
+	Status     string `form:"status"`
+	Month      string `form:"month"`
 }
 
-func ProductQueryParameterToMap(P *Parameters) (map[string]interface{}, string) {
+func ProductQueryParameterToMap(P Parameters) string {
 	querystring := ""
-	QueryMap := make(map[string]interface{})
-	if P.Featured != nil {
-		QueryMap["products.featured"] = *P.Featured
+
+	if P.Month != "" {
+		if querystring != "" {
+			querystring = querystring + " AND EXTRACT(MONTH from products.created_at) = " + P.Month
+
+		} else {
+			querystring = "EXTRACT(MONTH from products.created_at) = " + P.Month
+		}
 	}
-	if P.Status != nil {
-		QueryMap["products.status"] = *P.Status
+
+	if P.CategoryID != "" {
+		if querystring != "" {
+			querystring = querystring + " AND category_id IN (" + P.CategoryID + ")"
+
+		} else {
+			querystring = "category_id IN (" + P.CategoryID + ")"
+		}
+	}
+	if P.Featured != "" {
+		if querystring != "" {
+			querystring = querystring + " AND products.featured = " + P.Featured
+
+		} else {
+			querystring = "products.featured = " + P.Featured
+		}
+	}
+	if P.Status != "" {
+		if querystring != "" {
+			querystring = querystring + " AND products.status = '" + P.Status + "'"
+
+		} else {
+			querystring = "products.status = '" + P.Status + "'"
+		}
 	}
 
 	if P.StartPrice != nil && P.EndPrice != nil {
-		querystring = fmt.Sprintf("price >= %d AND price <= %d", *P.StartPrice, *P.EndPrice)
+		if querystring != "" {
+			querystring = querystring + " AND " + fmt.Sprintf("price >= %d AND price <= %d", *P.StartPrice, *P.EndPrice)
+
+		} else {
+			querystring = fmt.Sprintf("price >= %d AND price <= %d", *P.StartPrice, *P.EndPrice)
+		}
+
 	} else if P.StartPrice != nil && P.EndPrice == nil {
-		querystring = fmt.Sprintf("price >= %d", *P.StartPrice)
+		if querystring != "" {
+			querystring = querystring + " AND " + fmt.Sprintf("price >= %d", *P.StartPrice)
+
+		} else {
+			querystring = fmt.Sprintf("price >= %d", *P.StartPrice)
+		}
 
 	} else if P.StartPrice == nil && P.EndPrice != nil {
-		querystring = fmt.Sprintf("price <= %d", *P.EndPrice)
-	}
+		if querystring != "" {
+			querystring = querystring + " AND " + fmt.Sprintf("price <= %d", *P.EndPrice)
 
-	return QueryMap, querystring
+		} else {
+			querystring = fmt.Sprintf("price <= %d", *P.EndPrice)
+		}
+	}
+	fmt.Println("final querystring = ", querystring)
+	return querystring
 }
 
 func GenerateOrderID() string {
