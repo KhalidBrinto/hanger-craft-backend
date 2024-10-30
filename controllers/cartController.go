@@ -129,7 +129,10 @@ func AddCartItem(c *gin.Context) {
 }
 
 func AddWishlistItem(c *gin.Context) {
-	var wishlistItem *models.WishList
+	var wishlistItem struct {
+		ProductID uint `gorm:"not null"`
+		UserID    uint `gorm:"not null"`
+	}
 
 	if err := c.BindJSON(&wishlistItem); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -138,7 +141,10 @@ func AddWishlistItem(c *gin.Context) {
 	wishlistItem.UserID = c.GetUint("user_id")
 
 	// Save CartItem to the database
-	if err := config.DB.Create(&wishlistItem).Error; err != nil {
+	if err := config.DB.Create(&models.WishList{
+		ProductID: wishlistItem.ProductID,
+		UserID:    wishlistItem.UserID,
+	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
