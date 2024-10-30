@@ -77,7 +77,6 @@ func ProductQueryParameterToMap(P Parameters) string {
 			querystring = fmt.Sprintf("price <= %d", *P.EndPrice)
 		}
 	}
-	fmt.Println("final querystring = ", querystring)
 	return querystring
 }
 

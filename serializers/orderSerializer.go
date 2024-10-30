@@ -99,7 +99,8 @@ type SubCategory struct {
 	ParentID     *uint
 }
 type CategoryCreateSerializer struct {
-	Name         null.String  `binding:"required"`
-	CategoryType null.String  `binding:"required"`
+	Name         null.String `binding:"required"`
+	CategoryType null.String `binding:"required"`
+	ParentID     *uint
 	SubCatergory *SubCategory `json:"SubCategory"`
 }
