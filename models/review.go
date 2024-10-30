@@ -12,4 +12,5 @@ type Review struct {
 	Product   Product `gorm:"foreignKey:ProductID" json:"-"`
 	Rating    int     `gorm:"check:rating >= 1 AND rating <= 5"`
 	Comment   string  `gorm:"type:text"`
+	Status    bool    `gorm:"default:false"`
 }

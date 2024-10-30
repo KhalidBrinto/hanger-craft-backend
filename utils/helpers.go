@@ -9,23 +9,19 @@ import (
 
 type Parameters struct {
 	Featured   *bool   `form:"featured"`
-	CategoryID *uint   `form:"category_id"`
 	StartPrice *int    `form:"start_price"`
 	EndPrice   *int    `form:"end_price"`
 	Status     *string `form:"status"`
 }
 
-func ProductQueryParameterToMap(P Parameters) (map[string]interface{}, string) {
+func ProductQueryParameterToMap(P *Parameters) (map[string]interface{}, string) {
 	querystring := ""
 	QueryMap := make(map[string]interface{})
 	if P.Featured != nil {
-		QueryMap["products.featured"] = P.Featured
+		QueryMap["products.featured"] = *P.Featured
 	}
 	if P.Status != nil {
-		QueryMap["products.status"] = P.Featured
-	}
-	if P.CategoryID != nil {
-		QueryMap["products.category_id"] = P.CategoryID
+		QueryMap["products.status"] = *P.Status
 	}
 
 	if P.StartPrice != nil && P.EndPrice != nil {

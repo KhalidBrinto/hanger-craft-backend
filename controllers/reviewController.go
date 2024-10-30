@@ -71,7 +71,7 @@ func GetCustomerReview(c *gin.Context) {
 		Currency    string          `gorm:"size:3; not null"`
 		Images      pq.StringArray  `gorm:"type:varchar[]"`
 		CategoryID  uint            `gorm:"not null"`
-		Category    models.Category `gorm:"foreignKey:CategoryID" json:"-"`
+		Category    models.Category `gorm:"foreignKey:CategoryID"`
 	}
 	type User struct {
 		ID          uint            `gorm:"primarykey"`
@@ -91,7 +91,7 @@ func GetCustomerReview(c *gin.Context) {
 	}
 
 	// Find the review by ID and preload the associated user and product
-	model := config.DB.Model(&models.Review{}).Preload("User").Preload("Product").Order("created_at DESC")
+	model := config.DB.Model(&models.Review{}).Preload("User").Preload("Product").Preload("Product.Category").Order("created_at DESC")
 
 	pg := paginate.New()
 	page := pg.With(model).Request(c.Request).Response(&reviews)

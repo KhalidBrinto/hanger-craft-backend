@@ -42,12 +42,24 @@ func CreateProduct(c *gin.Context) {
 
 // GetProducts retrieves all products with their category and reviews
 func GetProducts(c *gin.Context) {
-	var params utils.Parameters
+	var params *utils.Parameters
 	if c.Bind(&params) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
 		return
 	}
-	query, querstring := utils.ProductQueryParameterToMap(params)
+	query, querystring := utils.ProductQueryParameterToMap(params)
+	categoryIDs := c.Query("category_id")
+
+	if categoryIDs != "" {
+		// Split the comma-separated values
+		if querystring != "" {
+			querystring = querystring + " AND category_id IN (" + categoryIDs + ")"
+
+		} else {
+			querystring = "category_id IN (" + categoryIDs + ")"
+		}
+	}
+
 	type Inventory struct {
 		ProductID  uint           `gorm:"not null" json:"-"`
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
@@ -73,14 +85,14 @@ func GetProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+	model = config.DB.Debug().Model(&products).Preload("Category").Preload("Inventory").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Where(query).
-		Where(querstring).
+		Where(querystring).
 		Group("products.id")
 
 	pg := paginate.New()
@@ -94,7 +106,7 @@ func GetProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, &page)
 }
 func GetNewArrivalProducts(c *gin.Context) {
-	var params utils.Parameters
+	var params *utils.Parameters
 	if c.Bind(&params) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
 		return
@@ -147,7 +159,7 @@ func GetNewArrivalProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, &page)
 }
 func GetTrendingProducts(c *gin.Context) {
-	var params utils.Parameters
+	var params *utils.Parameters
 	if c.Bind(&params) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind identifier parameters."})
 		return
