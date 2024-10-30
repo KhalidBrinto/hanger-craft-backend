@@ -110,7 +110,7 @@ func GetOrderByID(c *gin.Context) {
 	var order *serializers.OrderResponse
 
 	// Preload OrderItems to include them in the response
-	if err := config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").First(&order, orderID).Error; err != nil {
+	if err := config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").First(&order, orderID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		} else {
@@ -130,11 +130,11 @@ func GetOrders(c *gin.Context) {
 	if c.GetString("role") == "admin" {
 
 		// Preload OrderItems to include them in the response
-		model = config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Preload("OrderShippingAddress").Order("created_at DESC")
+		model = config.DB.Model(&models.Order{}).Preload("User").Preload("PaymentDetails").Preload("OrderItems.Product").Order("created_at DESC")
 
 	} else {
 		// Preload OrderItems to include them in the response
-		model = config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Preload("OrderShippingAddress").Where("user_id = ?", c.GetUint("user_id")).Order("created_at DESC")
+		model = config.DB.Model(&models.Order{}).Preload("User").Preload("OrderItems.Product").Where("user_id = ?", c.GetUint("user_id")).Order("created_at DESC")
 
 	}
 
