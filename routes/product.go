@@ -10,9 +10,10 @@ import (
 func ProductRoutes(router *gin.Engine) {
 	products := router.Group("/api/products")
 	{
+		products.POST("/search", controllers.SearchProducts)
 		products.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateProduct)
 		products.GET("", controllers.GetProducts)
-		products.GET("/:id", controllers.GetProduct)
+		products.GET("/:id", controllers.GetSingleProduct)
 		products.GET("/new-arrival", controllers.GetNewArrivalProducts)
 		products.GET("/trending", controllers.GetTrendingProducts)
 		products.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateProduct)

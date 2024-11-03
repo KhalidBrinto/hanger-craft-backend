@@ -14,6 +14,7 @@ type Parameters struct {
 	EndPrice   *int   `form:"end_price"`
 	Status     string `form:"status"`
 	Month      string `form:"month"`
+	Key        string `form:"key"`
 }
 
 func ProductQueryParameterToMap(P Parameters) string {

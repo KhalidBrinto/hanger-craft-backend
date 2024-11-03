@@ -19,6 +19,12 @@ type Product struct {
 	Status      *string        `gorm:"not null;check:status IN ('published', 'unpublished')"`
 	Featured    bool           `gorm:"default:false"`
 	Stock       uint           `gorm:"-"`
+	IsChild     bool           `gorm:"default:false"`
+	ParentID    *uint
+	Color       string
+	Size        string
+	BrandID     uint
+	Brand       Brand `gorm:"foreignKey:BrandID"`
 }
 
 type ProductAttribute struct {

@@ -78,6 +78,15 @@ func CreateOrder(c *gin.Context) {
 
 	}
 
+	if order.Coupon != "" {
+		coupon := ApplyCoupon(c, order.Coupon, order.UserID)
+		if coupon.DiscountType == "percentage" {
+			order.DiscountAmount = order.DiscountAmount + order.ItemPrice*(coupon.DiscountValue/100)
+		} else {
+			order.DiscountAmount = order.DiscountAmount + coupon.DiscountValue
+		}
+	}
+
 	order.TotalPrice = order.ItemPrice - order.DiscountAmount + order.ShippingCost
 
 	order.PaymentDetails.OrderID = order.ID

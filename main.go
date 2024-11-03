@@ -47,7 +47,8 @@ func main() {
 	routes.ProductRoutes(router)
 	routes.ReviewRoutes(router)
 	routes.UserRoutes(router)
-	routes.AdminDashboardRoutes(router)
+	routes.BrandRoutes(router)
+	routes.CuponRoutes(router)
 
 	router.Run(":3000")
 }

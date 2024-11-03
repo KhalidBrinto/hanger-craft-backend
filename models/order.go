@@ -20,6 +20,7 @@ type Order struct {
 	OrderItems           []OrderItem `gorm:"foreignKey:OrderID"`
 	OrderShippingAddress string      `gorm:"type:text"`
 	PaymentDetails       *Payment    `gorm:"-"`
+	Coupon               string      `gorm:"-"`
 }
 
 func (o *Order) BeforeCreate(tx *gorm.DB) (err error) {
