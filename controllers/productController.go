@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"github.com/morkid/paginate"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
@@ -114,15 +115,21 @@ func GetProducts(c *gin.Context) {
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
 		StockLevel int            `gorm:"not null"`
 	}
+	type Brand struct {
+		ID   uint        `gorm:"primarykey"`
+		Name null.String `gorm:"size:100;not null"`
+	}
 	type Product struct {
 		gorm.Model
-		Name         string          `gorm:"size:150;not null"`
-		Description  string          `gorm:"type:text"`
-		SKU          string          `gorm:"size:150;not null;unique;index"`
-		Barcode      *string         `gorm:"size:150"`
-		Price        float64         `gorm:"type:decimal(10,2);not null"`
-		Currency     string          `gorm:"size:3; not null"`
-		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		Name         string         `gorm:"size:150;not null"`
+		Description  string         `gorm:"type:text"`
+		SKU          string         `gorm:"size:150;not null;unique;index"`
+		Barcode      *string        `gorm:"size:150"`
+		Price        float64        `gorm:"type:decimal(10,2);not null"`
+		Currency     string         `gorm:"size:3; not null"`
+		Images       pq.StringArray `gorm:"type:varchar[]"`
+		BrandID      *uint
+		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
 		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
@@ -134,7 +141,7 @@ func GetProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -166,15 +173,21 @@ func GetNewArrivalProducts(c *gin.Context) {
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
 		StockLevel int            `gorm:"not null"`
 	}
+	type Brand struct {
+		ID   uint        `gorm:"primarykey"`
+		Name null.String `gorm:"size:100;not null"`
+	}
 	type Product struct {
 		gorm.Model
-		Name         string          `gorm:"size:150;not null"`
-		Description  string          `gorm:"type:text"`
-		SKU          string          `gorm:"size:150;not null;unique;index"`
-		Barcode      *string         `gorm:"size:150"`
-		Price        float64         `gorm:"type:decimal(10,2);not null"`
-		Currency     string          `gorm:"size:3; not null"`
-		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		Name         string         `gorm:"size:150;not null"`
+		Description  string         `gorm:"type:text"`
+		SKU          string         `gorm:"size:150;not null;unique;index"`
+		Barcode      *string        `gorm:"size:150"`
+		Price        float64        `gorm:"type:decimal(10,2);not null"`
+		Currency     string         `gorm:"size:3; not null"`
+		Images       pq.StringArray `gorm:"type:varchar[]"`
+		BrandID      *uint
+		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
 		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
@@ -186,7 +199,7 @@ func GetNewArrivalProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -218,15 +231,21 @@ func GetTrendingProducts(c *gin.Context) {
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
 		StockLevel int            `gorm:"not null"`
 	}
+	type Brand struct {
+		ID   uint        `gorm:"primarykey"`
+		Name null.String `gorm:"size:100;not null"`
+	}
 	type Product struct {
 		gorm.Model
-		Name         string          `gorm:"size:150;not null"`
-		Description  string          `gorm:"type:text"`
-		SKU          string          `gorm:"size:150;not null;unique;index"`
-		Barcode      *string         `gorm:"size:150"`
-		Price        float64         `gorm:"type:decimal(10,2);not null"`
-		Currency     string          `gorm:"size:3; not null"`
-		Images       pq.StringArray  `gorm:"type:varchar[]"`
+		Name         string         `gorm:"size:150;not null"`
+		Description  string         `gorm:"type:text"`
+		SKU          string         `gorm:"size:150;not null;unique;index"`
+		Barcode      *string        `gorm:"size:150"`
+		Price        float64        `gorm:"type:decimal(10,2);not null"`
+		Currency     string         `gorm:"size:3; not null"`
+		Images       pq.StringArray `gorm:"type:varchar[]"`
+		BrandID      *uint
+		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
 		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
@@ -238,7 +257,7 @@ func GetTrendingProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -280,6 +299,10 @@ func GetSingleProduct(c *gin.Context) {
 		TotalReviews int
 		Rating       int
 	}
+	type Brand struct {
+		ID   uint        `gorm:"primarykey"`
+		Name null.String `gorm:"size:100;not null"`
+	}
 	type Product struct {
 		gorm.Model
 		Name         string          `gorm:"size:150;not null"`
@@ -291,8 +314,10 @@ func GetSingleProduct(c *gin.Context) {
 		Images       pq.StringArray  `gorm:"type:varchar[]"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
-		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
+		BrandID      *uint
+		Brand        Brand      `gorm:"foreignKey:BrandID"`
+		Status       *string    `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory    *Inventory `gorm:"foreignKey:ProductID"`
 		TotalReviews int
 		Rating       int
 		Variation    json.RawMessage
@@ -300,7 +325,7 @@ func GetSingleProduct(c *gin.Context) {
 
 	var product *Product
 
-	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").
+	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
