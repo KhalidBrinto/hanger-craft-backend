@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -118,4 +119,13 @@ func GenerateTransactionID() string {
 
 	// Return the ID with 'HC' prefix
 	return "INV" + string(txID)
+}
+
+// Decode Base64 string to []byte
+func decodeBase64Image(base64String string) ([]byte, error) {
+	decodedImage, err := base64.StdEncoding.DecodeString(base64String)
+	if err != nil {
+		return nil, err
+	}
+	return decodedImage, nil
 }
