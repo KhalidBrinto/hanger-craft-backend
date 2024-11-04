@@ -5,6 +5,7 @@ import (
 	"backend/models"
 	"backend/utils"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -320,6 +321,11 @@ func GetSingleProduct(c *gin.Context) {
 		First(&product)
 
 	if model.Error != nil {
+		if errors.Is(model.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "No product found"})
+			return
+
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
 		return
 	}
