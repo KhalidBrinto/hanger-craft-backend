@@ -10,6 +10,7 @@ import (
 type Parameters struct {
 	Featured   string `form:"featured"`
 	CategoryID string `form:"category_id"`
+	BrandID    string `form:"brand_id"`
 	StartPrice *int   `form:"start_price"`
 	EndPrice   *int   `form:"end_price"`
 	Status     string `form:"status"`
@@ -35,6 +36,14 @@ func ProductQueryParameterToMap(P Parameters) string {
 
 		} else {
 			querystring = "category_id IN (" + P.CategoryID + ")"
+		}
+	}
+	if P.BrandID != "" {
+		if querystring != "" {
+			querystring = querystring + " AND brand_id IN (" + P.BrandID + ")"
+
+		} else {
+			querystring = "brand_id IN (" + P.BrandID + ")"
 		}
 	}
 	if P.Featured != "" {
