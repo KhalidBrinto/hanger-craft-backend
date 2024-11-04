@@ -70,7 +70,7 @@ func DeleteCoupon(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete coupon"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Coupon deleted"})
+	c.JSON(http.StatusNoContent, gin.H{"message": "Coupon deleted"})
 }
 
 // Apply a coupon
@@ -91,7 +91,7 @@ func ApplyCoupon(c *gin.Context, CouponCode string, userID uint) *models.Coupon 
 	// Check usage limits
 	var usageCount int64
 	config.DB.Model(&models.CouponUsageHistory{}).Where("coupon_id = ?", coupon.ID).Count(&usageCount)
-	if usageCount >= int64(coupon.UsageLimit) {
+	if coupon.UsageLimit != nil && usageCount >= int64(*coupon.UsageLimit) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Coupon usage limit reached"})
 		return nil
 	}

@@ -14,9 +14,9 @@ type Coupon struct {
 	DiscountValue     float64    `gorm:"type:numeric(10,2);not null"`                                     // Discount value (percentage or fixed amount)
 	MinOrderValue     *float64   `gorm:"type:numeric(10,2)"`                                              // Minimum order value required to use the coupon
 	MaxDiscountValue  *float64   `gorm:"type:numeric(10,2)"`                                              // Max discount for percentage-based coupons
-	UsageLimit        int        `gorm:"default:1"`                                                       // Total times this coupon can be used
-	UsageLimitPerUser int        `gorm:"default:1"`                                                       // Times each user can use the coupon
-	StartDate         time.Time  `gorm:"not null"`                                                        // Start date for coupon validity
+	UsageLimit        *int       // Total times this coupon can be used
+	UsageLimitPerUser int        `gorm:"default:1"` // Times each user can use the coupon
+	StartDate         time.Time  `gorm:"not null"`  // Start date for coupon validity
 	ExpirationDate    *time.Time // Expiration date for coupon validity
 	IsActive          bool       `gorm:"default:true"` // Whether the coupon is active
 }

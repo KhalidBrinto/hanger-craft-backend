@@ -27,7 +27,7 @@ func AddBrand(c *gin.Context) {
 	}
 
 	// Return the newly created category
-	c.JSON(http.StatusOK, gin.H{"message": "brand added successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "brand added successfully"})
 }
 
 // GetCategories retrieves all categories with their products
@@ -98,5 +98,5 @@ func DeleteBrand(c *gin.Context) {
 	}
 
 	// Return success message
-	c.JSON(http.StatusOK, gin.H{"message": "Brand deleted successfully"})
+	c.JSON(http.StatusNoContent, gin.H{"message": "Brand deleted successfully"})
 }
