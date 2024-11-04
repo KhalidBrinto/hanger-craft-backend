@@ -12,6 +12,7 @@ func CategoryRoutes(router *gin.Engine) {
 	{
 		categories.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateCategory)
 		categories.GET("", controllers.GetCategories)
+		categories.GET("/all", controllers.GetNestedCategories)
 		categories.GET("/sub-category/:parent_id", controllers.GetSubCategories)
 		categories.GET("/:id", controllers.GetCategory)
 		categories.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateCategory)

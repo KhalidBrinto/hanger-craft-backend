@@ -4,10 +4,12 @@ import (
 	"backend/config"
 	"backend/models"
 	"backend/serializers"
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
@@ -58,6 +60,49 @@ func GetCategories(c *gin.Context) {
 
 	// Return the categories list
 	c.JSON(http.StatusOK, categories)
+}
+
+func GetNestedCategories(c *gin.Context) {
+
+	type Category struct {
+		gorm.Model
+		Name         null.String `gorm:"size:100;not null"`
+		CategoryType null.String `gorm:"size:100;not null;check:category_type IN ('parent', 'child')"`
+		ParentID     *uint
+		// Products     []Product `gorm:"foreignKey:CategoryID"`
+		SubCategory json.RawMessage
+	}
+	var categories []*Category
+
+	model := config.DB.Model(&categories).
+		Select(`categories.*, 
+				COALESCE(
+					json_agg(
+						json_build_object(
+						'ID', subcategories.id,
+						'Name', subcategories.name,
+						'ParentID', subcategories.parent_id
+						)
+					)FILTER (WHERE subcategories.id IS NOT NULL),
+            		'[]'
+				) AS sub_category
+			`).
+		Joins("LEFT JOIN categories AS subcategories ON subcategories.parent_id = categories.id").
+		Where("categories.parent_id is null").
+		Group("categories.id").
+		Find(&categories)
+
+	if model.Error != nil {
+		if errors.Is(model.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "No categories found"})
+			return
+
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &categories)
 }
 
 func GetSubCategories(c *gin.Context) {
