@@ -80,6 +80,11 @@ func CreateOrder(c *gin.Context) {
 
 	if order.Coupon != "" {
 		coupon := ApplyCoupon(c, order.Coupon, order.UserID)
+		if coupon == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to apply coupon"})
+			return
+
+		}
 		if coupon.DiscountType == "percentage" {
 			order.DiscountAmount = order.DiscountAmount + order.ItemPrice*(coupon.DiscountValue/100)
 		} else {
