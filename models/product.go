@@ -23,7 +23,7 @@ type Product struct {
 	ParentID    *uint
 	Color       string
 	Size        string
-	BrandID     uint
+	BrandID     *uint
 	Brand       Brand `gorm:"foreignKey:BrandID"`
 }
 

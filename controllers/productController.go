@@ -300,18 +300,21 @@ func GetSingleProduct(c *gin.Context) {
 
 	var product *Product
 
-	model := config.DB.Debug().Model(&product).Preload("Category").Preload("Inventory").
+	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
-				json_agg(
-					json_build_object(
-					'id', variations.id,
-					'images', variations.images,
-					'size', variations.size,
-					'color', variations.color
+				COALESCE(
+					json_agg(
+						json_build_object(
+						'id', variations.id,
+						'images', variations.images,
+						'size', variations.size,
+						'color', variations.color
 
-					)
+						)
+					)FILTER (WHERE variations.id IS NOT NULL),
+            		'[]'
 				) AS variation
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
