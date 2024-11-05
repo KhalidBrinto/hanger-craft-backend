@@ -122,10 +122,15 @@ func GenerateTransactionID() string {
 }
 
 // Decode Base64 string to []byte
-func decodeBase64Image(base64String string) ([]byte, error) {
+func DecodeBase64Image(base64String string) ([]byte, error) {
 	decodedImage, err := base64.StdEncoding.DecodeString(base64String)
 	if err != nil {
 		return nil, err
 	}
 	return decodedImage, nil
+}
+
+func EncodeImageToBase64(imageBytes []byte) string {
+	encodedString := base64.StdEncoding.EncodeToString(imageBytes)
+	return encodedString
 }

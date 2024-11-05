@@ -1,6 +1,8 @@
 package models
 
 import (
+	"backend/utils"
+
 	"gorm.io/gorm"
 )
 
@@ -27,14 +29,27 @@ type Product struct {
 }
 
 type ProductImage struct {
-	ID        uint    `gorm:"primaryKey"`
-	ProductID uint    // Foreign key to the Product
-	Product   Product `gorm:"foreignKey:ProductID" json:"-"`
-	ImageB64  string  `gorm:"-" json:"Image"`
-	Image     []byte  `gorm:"type:bytea"` // Binary data for the image
+	ID         uint    `gorm:"primaryKey"`
+	ProductID  uint    // Foreign key to the Product
+	Product    Product `gorm:"foreignKey:ProductID" json:"-"`
+	Image      string  `gorm:"-" json:"Image"`
+	ImageBytes []byte  `gorm:"column:image;type:bytea" json:"-"`
 }
 
 func (c *ProductImage) BeforeCreate(tx *gorm.DB) (err error) {
+
+	bt, err := utils.DecodeBase64Image(c.Image)
+	if err != nil {
+		return err
+	}
+
+	c.ImageBytes = bt
+
+	return nil
+
+}
+func (c *ProductImage) AfterFind(tx *gorm.DB) (err error) {
+	c.Image = utils.EncodeImageToBase64(c.ImageBytes)
 
 	return nil
 

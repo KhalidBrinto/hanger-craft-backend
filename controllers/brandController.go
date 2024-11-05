@@ -34,7 +34,7 @@ func AddBrand(c *gin.Context) {
 func GetBrands(c *gin.Context) {
 	var brands []*models.Brand
 
-	if err := config.DB.Preload("Products").Find(&brands).Error; err != nil {
+	if err := config.DB.Preload("Products").Preload("Logo").Find(&brands).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
