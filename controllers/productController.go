@@ -18,27 +18,108 @@ import (
 
 // CreateProduct creates a new product
 func CreateProduct(c *gin.Context) {
-	var product *models.Product
+	type Variation struct {
+		Size  []string
+		Color []string
+	}
+	var payload struct {
+		Name        string  `gorm:"size:150;not null"`
+		Description string  `gorm:"type:text"`
+		SKU         string  `gorm:"size:150;not null;unique;index"`
+		Barcode     *string `gorm:"size:150"`
+		Price       float64 `gorm:"type:decimal(10,2);not null"`
+		Currency    string  `gorm:"size:3; not null"`
+		CategoryID  uint    `gorm:"not null"`
+		Status      *string `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Featured    bool    `gorm:"default:false"`
+		Stock       uint    `gorm:"-"`
+		IsChild     bool    `gorm:"default:false"`
+		ParentID    *uint
+		Color       string
+		Size        string
+		BrandID     *uint
+		Variations  *Variation
+		Images      []models.ProductImage `gorm:"foreignKey:ProductID"`
+	}
 
-	if err := c.BindJSON(&product); err != nil {
+	if err := c.BindJSON(&payload); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := config.DB.Create(&product).Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	tx := config.DB.Begin()
+	parent := models.Product{
+		Name:        payload.Name,
+		Description: payload.Description,
+		SKU:         payload.SKU,
+		Barcode:     payload.Barcode,
+		Price:       payload.Price,
+		Currency:    payload.Currency,
+		CategoryID:  payload.CategoryID,
+		BrandID:     payload.BrandID,
+		Status:      payload.Status,
+		Featured:    payload.Featured,
+		Color:       payload.Color,
+		Size:        payload.Size,
+		Images:      payload.Images,
+	}
+
+	if err := tx.Create(&parent).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
 		return
 	}
-	if err := config.DB.Create(&models.Inventory{
-		ProductID:  product.ID,
-		StockLevel: int(product.Stock),
+
+	if payload.Variations != nil {
+		var variations []models.Product
+
+		for _, size := range payload.Variations.Size {
+			for _, color := range payload.Variations.Color {
+				variations = append(variations, models.Product{
+					Name:        parent.Name,
+					Description: parent.Description,
+					SKU:         parent.SKU + "-" + size + "-" + color,
+					Barcode:     parent.Barcode,
+					Price:       parent.Price,
+					Currency:    parent.Currency,
+					CategoryID:  parent.CategoryID,
+					Status:      parent.Status,
+					IsChild:     true,
+					ParentID:    &parent.ID,
+					Color:       color,
+					Size:        size,
+					BrandID:     parent.BrandID,
+				})
+
+			}
+
+		}
+
+		if err := tx.Create(&variations).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create variations", "error": err.Error()})
+			return
+		}
+
+	}
+
+	// if err := config.DB.Create(&product).Error; err != nil {
+	// 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	if err := tx.Create(&models.Inventory{
+		ProductID:  parent.ID,
+		StockLevel: int(payload.Stock),
 		InOpen:     0,
 		ChangeType: "restock",
 		ChangeDate: time.Now(),
 	}).Error; err != nil {
+		tx.Rollback()
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Product added successfully"})
 }
@@ -121,13 +202,12 @@ func GetProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string         `gorm:"size:150;not null"`
-		Description  string         `gorm:"type:text"`
-		SKU          string         `gorm:"size:150;not null;unique;index"`
-		Barcode      *string        `gorm:"size:150"`
-		Price        float64        `gorm:"type:decimal(10,2);not null"`
-		Currency     string         `gorm:"size:3; not null"`
-		Images       pq.StringArray `gorm:"type:varchar[]"`
+		Name         string  `gorm:"size:150;not null"`
+		Description  string  `gorm:"type:text"`
+		SKU          string  `gorm:"size:150;not null;unique;index"`
+		Barcode      *string `gorm:"size:150"`
+		Price        float64 `gorm:"type:decimal(10,2);not null"`
+		Currency     string  `gorm:"size:3; not null"`
 		BrandID      *uint
 		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
@@ -136,12 +216,13 @@ func GetProducts(c *gin.Context) {
 		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
 		TotalReviews int
 		Rating       int
+		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
 	}
 
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -311,7 +392,6 @@ func GetSingleProduct(c *gin.Context) {
 		Barcode      *string         `gorm:"size:150"`
 		Price        float64         `gorm:"type:decimal(10,2);not null"`
 		Currency     string          `gorm:"size:3; not null"`
-		Images       pq.StringArray  `gorm:"type:varchar[]"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
 		BrandID      *uint
@@ -321,11 +401,12 @@ func GetSingleProduct(c *gin.Context) {
 		TotalReviews int
 		Rating       int
 		Variation    json.RawMessage
+		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
 	}
 
 	var product *Product
 
-	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").Preload("Brand").
+	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
@@ -333,7 +414,6 @@ func GetSingleProduct(c *gin.Context) {
 					json_agg(
 						json_build_object(
 						'id', variations.id,
-						'images', variations.images,
 						'size', variations.size,
 						'color', variations.color
 

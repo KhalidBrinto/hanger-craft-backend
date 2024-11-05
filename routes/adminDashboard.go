@@ -13,6 +13,7 @@ func AdminDashboardRoutes(router *gin.Engine) {
 	adminDashboardRoutes.Use(middlewares.CheckIfAdmin())
 	{
 		adminDashboardRoutes.GET("/stats", controllers.GetStats)
+		adminDashboardRoutes.GET("/top-selling", controllers.GetTopSellingProducts)
 		adminDashboardRoutes.GET("/monthly-sales", controllers.GetMonthlySales)
 		adminDashboardRoutes.GET("/yearly-revenue", controllers.GetYearlyRevenue)
 	}
