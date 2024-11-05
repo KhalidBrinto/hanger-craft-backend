@@ -45,7 +45,28 @@ func ConnectDatabase() {
 		log.Println("Database Connected Successfully !")
 	}
 	log.Println("Attempting to migrate")
-	db.AutoMigrate(models.Brand{}, models.CartItem{}, models.Category{}, models.Coupon{}, models.CouponUsageHistory{}, models.Inventory{}, models.Order{}, models.OrderItem{}, models.Payment{}, models.PaymentOption{}, models.Product{}, models.Review{}, models.ShippingAddress{}, models.ShoppingCart{}, models.ShippingOptions{}, models.User{}, models.ProductAttribute{}, models.WishList{})
+	db.AutoMigrate(
+		models.Brand{},
+		models.BrandImage{},
+		models.CartItem{},
+		models.Category{},
+		models.Coupon{},
+		models.CouponUsageHistory{},
+		models.Inventory{},
+		models.Order{},
+		models.OrderItem{},
+		models.Payment{},
+		models.PaymentOption{},
+		models.Product{},
+		models.ProductImage{},
+		models.Review{},
+		models.ShippingAddress{},
+		models.ShoppingCart{},
+		models.ShippingOptions{},
+		models.User{},
+		models.ProductAttribute{},
+		models.WishList{},
+	)
 	log.Println("Finished migration")
 	DB = db
 }
