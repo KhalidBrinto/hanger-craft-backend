@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
@@ -34,13 +35,18 @@ func AddBrand(c *gin.Context) {
 func GetBrands(c *gin.Context) {
 	var brands []*models.Brand
 
-	if err := config.DB.Preload("Products").Preload("Logo").Find(&brands).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	model := config.DB.Model(&brands).Preload("Products").Preload("Logo")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&brands)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
 		return
 	}
 
 	// Return the categories list
-	c.JSON(http.StatusOK, brands)
+	c.JSON(http.StatusOK, page)
 }
 
 // UpdateCategory updates a category by its ID
