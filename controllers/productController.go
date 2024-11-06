@@ -260,13 +260,13 @@ func GetNewArrivalProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string         `gorm:"size:150;not null"`
-		Description  string         `gorm:"type:text"`
-		SKU          string         `gorm:"size:150;not null;unique;index"`
-		Barcode      *string        `gorm:"size:150"`
-		Price        float64        `gorm:"type:decimal(10,2);not null"`
-		Currency     string         `gorm:"size:3; not null"`
-		Images       pq.StringArray `gorm:"type:varchar[]"`
+		Name         string                `gorm:"size:150;not null"`
+		Description  string                `gorm:"type:text"`
+		SKU          string                `gorm:"size:150;not null;unique;index"`
+		Barcode      *string               `gorm:"size:150"`
+		Price        float64               `gorm:"type:decimal(10,2);not null"`
+		Currency     string                `gorm:"size:3; not null"`
+		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
 		BrandID      *uint
 		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
@@ -280,13 +280,14 @@ func GetNewArrivalProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Where(querstring).
+		Where("is_child = false").
 		Group("products.id").
 		Order("products.created_at DESC")
 
@@ -318,13 +319,13 @@ func GetTrendingProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string         `gorm:"size:150;not null"`
-		Description  string         `gorm:"type:text"`
-		SKU          string         `gorm:"size:150;not null;unique;index"`
-		Barcode      *string        `gorm:"size:150"`
-		Price        float64        `gorm:"type:decimal(10,2);not null"`
-		Currency     string         `gorm:"size:3; not null"`
-		Images       pq.StringArray `gorm:"type:varchar[]"`
+		Name         string                `gorm:"size:150;not null"`
+		Description  string                `gorm:"type:text"`
+		SKU          string                `gorm:"size:150;not null;unique;index"`
+		Barcode      *string               `gorm:"size:150"`
+		Price        float64               `gorm:"type:decimal(10,2);not null"`
+		Currency     string                `gorm:"size:3; not null"`
+		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
 		BrandID      *uint
 		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
@@ -338,7 +339,7 @@ func GetTrendingProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").
+	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -346,6 +347,7 @@ func GetTrendingProducts(c *gin.Context) {
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Joins("LEFT JOIN order_items on products.id = order_items.product_id").
 		Where(querstring).
+		Where("is_child = ?", false).
 		Group("products.id").
 		Order("COUNT(distinct order_items.order_id) DESC")
 
@@ -368,6 +370,7 @@ func GetSingleProduct(c *gin.Context) {
 		ProductID  uint           `gorm:"not null" json:"-"`
 		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
 		StockLevel int            `gorm:"not null"`
+		InOpen     int            `gorm:"not null"`
 	}
 
 	type Variation struct {

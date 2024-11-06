@@ -120,6 +120,7 @@ func GetMonthlySales(c *gin.Context) {
 
 	if monthlySales.Total == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No data found"})
+		return
 	}
 	// Return the result
 	c.JSON(http.StatusOK, gin.H{
