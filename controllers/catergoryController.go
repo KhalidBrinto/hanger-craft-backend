@@ -3,7 +3,6 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
-	"backend/serializers"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -16,21 +15,14 @@ import (
 // CreateCategory creates a new category
 func CreateCategory(c *gin.Context) {
 
-	var categoryRequest *serializers.CategoryCreateSerializer
+	var category *models.Category
 
 	// Bind the incoming JSON to the Category struct
-	if err := c.BindJSON(&categoryRequest); err != nil {
+	if err := c.BindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	category := &models.Category{
-		Name:         categoryRequest.Name,
-		CategoryType: categoryRequest.CategoryType,
-		ParentID:     categoryRequest.ParentID,
-	}
-
-	// Insert the category into the database
 	if err := config.DB.Create(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrCheckConstraintViolated) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "CategoryType must be in ['parent', 'child']"})
@@ -41,7 +33,16 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	// Return the newly created category
-	c.JSON(http.StatusOK, gin.H{"message": "category created successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "category added successfully"})
+	// Insert the category into the database
+	// if err := config.DB.Create(&category).Error; err != nil {
+	// 	if errors.Is(err, gorm.ErrCheckConstraintViolated) {
+	// 		c.JSON(http.StatusBadRequest, gin.H{"error": "CategoryType must be in ['parent', 'child']"})
+	// 		return
+	// 	}
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 }
 
 // GetCategories retrieves all categories with their products
@@ -53,7 +54,7 @@ func GetCategories(c *gin.Context) {
 	}
 
 	// Use Preload to load associated Products for each category
-	if err := config.DB.Preload("Products").Where(querystring).Find(&categories).Error; err != nil {
+	if err := config.DB.Preload("Products").Preload("Image").Where(querystring).Find(&categories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
