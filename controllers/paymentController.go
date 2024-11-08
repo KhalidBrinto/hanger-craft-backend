@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +35,6 @@ func CreatePayment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"payment": payment})
 }
 
-// GetPaymentsByOrder retrieves all payments for a specific order
 func GetPaymentsByOrder(c *gin.Context) {
 	orderID := c.Param("order_id")
 	var payments []*models.Payment
@@ -51,6 +51,25 @@ func GetPaymentsByOrder(c *gin.Context) {
 
 	// Return the list of payments
 	c.JSON(http.StatusOK, payments)
+}
+
+// GetPaymentsByOrder retrieves all payments for a specific order
+func GetAllPayments(c *gin.Context) {
+	var payments []*models.Payment
+
+	// Find payments by the associated order ID
+	model := config.DB.Find(&payments).Order("created_at DESC")
+
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&payments)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
+		return
+	}
+
+	// Return the list of payments
+	c.JSON(http.StatusOK, page)
 }
 
 // UpdatePaymentStatus updates the payment status for a specific payment

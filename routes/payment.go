@@ -10,9 +10,10 @@ import (
 func PaymentRoutes(router *gin.Engine) {
 	payments := router.Group("/api/payments")
 	{
-		payments.POST("/", middlewares.AuthMiddleware(), controllers.CreatePayment)                    // Create a payment
-		payments.PATCH("/:id/status/", middlewares.AuthMiddleware(), controllers.UpdatePaymentStatus)  // Update payment status
-		payments.GET("/order/:order_id", middlewares.AuthMiddleware(), controllers.GetPaymentsByOrder) // Get payments by order ID
+		payments.POST("/", middlewares.AuthMiddleware(), controllers.CreatePayment)                            // Create a payment
+		payments.GET("", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.GetAllPayments) // Get payments by order ID
+		payments.PATCH("/:id/status/", middlewares.AuthMiddleware(), controllers.UpdatePaymentStatus)          // Update payment status
+		payments.GET("/order/:order_id", middlewares.AuthMiddleware(), controllers.GetPaymentsByOrder)         // Get payments by order ID
 	}
 
 	paymentOptions := router.Group("/api/payment-options")
