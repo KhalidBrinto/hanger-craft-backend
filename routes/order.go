@@ -17,4 +17,10 @@ func OrderRoutes(router *gin.Engine) {
 		orders.PUT("/cancel/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CancelOrder)
 		orders.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateOrderStatus)
 	}
+	shipping := router.Group("/api/shipping")
+	{
+		shipping.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateShippingOption)
+		shipping.GET("", middlewares.AuthMiddleware(), controllers.GetShippingOptions)
+		shipping.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateShippingOption)
+	}
 }
