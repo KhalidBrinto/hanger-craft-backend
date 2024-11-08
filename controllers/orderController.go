@@ -25,6 +25,12 @@ func CreateOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	if len(order.OrderItems) == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "order items cannot be empty"})
+		return
+
+	}
 	order.UserID = c.GetUint("user_id")
 	order.OrderStatus = "pending"
 	order.ItemPrice = 0.0
