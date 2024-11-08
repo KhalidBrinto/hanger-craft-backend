@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/morkid/paginate"
@@ -55,10 +56,33 @@ func GetPaymentsByOrder(c *gin.Context) {
 
 // GetPaymentsByOrder retrieves all payments for a specific order
 func GetAllPayments(c *gin.Context) {
-	var payments []*models.Payment
+
+	type Order struct {
+		gorm.Model
+		OrderIdentifier      string  `gorm:"type:varchar(8); not null;unique;index"`
+		OrderStatus          string  `gorm:"size:50;not null;check:order_status IN ('pending', 'shipped', 'delivered', 'cancelled')"`
+		Currency             *string `gorm:"size:3; not null"`
+		TotalPrice           float64 `gorm:"type:decimal(10,2);not null"`
+		ItemPrice            float64 `gorm:"type:decimal(10,2);not null"`
+		DiscountAmount       float64 `gorm:"type:decimal(10,2);default:0;not null"`
+		ShippingCost         float64 `gorm:"type:decimal(10,2);default:0;not null"`
+		OrderShippingAddress string  `gorm:"type:text"`
+	}
+
+	type Payment struct {
+		gorm.Model
+		PaymentMethod  string  `gorm:"size:50;not null;check:payment_method IN ('cash_on_delivery', 'paypal')"`
+		PaymentStatus  string  `gorm:"size:50;not null;check:payment_status IN ('pending', 'completed', 'failed')"`
+		Amount         float64 `gorm:"type:decimal(10,2);not null"`
+		TransanctionID *string `gorm:"size:11;not null"`
+		PaymentDate    *time.Time
+		OrderID        uint  `gorm:"not null"`
+		Order          Order `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE"`
+	}
+	var payments []*Payment
 
 	// Find payments by the associated order ID
-	model := config.DB.Find(&payments).Order("created_at DESC")
+	model := config.DB.Preload("Order").Find(&payments).Order("created_at DESC")
 
 	pg := paginate.New()
 	page := pg.With(model).Request(c.Request).Response(&payments)

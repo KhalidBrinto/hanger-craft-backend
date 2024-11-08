@@ -19,7 +19,6 @@ import (
 func CreateOrder(c *gin.Context) {
 	var order *models.Order
 	var shipping_option *models.ShippingOptions
-	shipping_option.ShippingCost = 0
 
 	// Bind JSON request to order struct
 	if err := c.ShouldBindJSON(&order); err != nil {
