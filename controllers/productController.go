@@ -145,25 +145,16 @@ func SearchProducts(c *gin.Context) {
 	}
 
 	var products []*Product
-	var model *gorm.DB
 
-	model = config.DB.Model(&products).
+	config.DB.Model(&products).
 		Select(`products.name, products.id`).
 		Joins("LEFT JOIN categories ON products.category_id = categories.id").
 		Joins("LEFT JOIN brands ON products.brand_id = brands.id").
 		Where(searchQuery).
 		Where("products.status = ? AND products.parent_id IS NULL", "published").
-		Group("products.id")
+		Group("products.id").Find(&products)
 
-	pg := paginate.New()
-	page := pg.With(model).Request(c.Request).Response(&products)
-
-	if page.Error {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
-		return
-	}
-
-	c.JSON(http.StatusOK, &page)
+	c.JSON(http.StatusOK, &products)
 }
 func GetProducts(c *gin.Context) {
 	var params utils.Parameters
