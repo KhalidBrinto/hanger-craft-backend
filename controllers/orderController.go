@@ -56,9 +56,14 @@ func CreateOrder(c *gin.Context) {
 	for _, item := range order.OrderItems {
 		order.ItemPrice += item.PriceAtPurchase * float64(item.Quantity)
 
+		var ParentID uint
+		tx.Model(&models.Product{}).Select("parent_id").Where("id = ?", item.ProductID).First(&ParentID)
+		if ParentID == 0 {
+			ParentID = item.ProductID
+		}
 		// Fetch the existing inventory record for the product
 		var inventory models.Inventory
-		if err := tx.Where("product_id = ?", item.ProductID).First(&inventory).Error; err != nil {
+		if err := tx.Where("product_id = ?", ParentID).First(&inventory).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch inventory"})
 			return
