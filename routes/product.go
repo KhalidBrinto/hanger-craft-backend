@@ -10,7 +10,7 @@ import (
 func ProductRoutes(router *gin.Engine) {
 	products := router.Group("/api/products")
 	{
-		products.POST("/search", controllers.SearchProducts)
+		products.GET("/search", controllers.SearchProducts)
 		products.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateProduct)
 		products.GET("", controllers.GetProducts)
 		products.GET("/:id", controllers.GetSingleProduct)

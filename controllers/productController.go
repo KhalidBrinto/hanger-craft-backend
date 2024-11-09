@@ -135,42 +135,24 @@ func SearchProducts(c *gin.Context) {
 	searchQuery := ""
 
 	if params.Key != "" {
-		searchQuery = "name ILIKE '%" + params.Key + "%' OR sku ILIKE '%" + params.Key + "%' OR categories.name ILIKE '%" + params.Key + "%' OR size ILIKE '%" + params.Key + "%'"
+		searchQuery = "products.name ILIKE '%" + params.Key + "%' OR sku ILIKE '%" + params.Key + "%' OR categories.name ILIKE '%" + params.Key + "%' OR brands.name ILIKE '%" + params.Key + "%' OR size ILIKE '%" + params.Key + "%'"
 	}
 
-	type Inventory struct {
-		ProductID  uint           `gorm:"not null" json:"-"`
-		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
-		StockLevel int            `gorm:"not null"`
-	}
 	type Product struct {
-		gorm.Model
-		Name         string          `gorm:"size:150;not null"`
-		Description  string          `gorm:"type:text"`
-		SKU          string          `gorm:"size:150;not null;unique;index"`
-		Barcode      *string         `gorm:"size:150"`
-		Price        float64         `gorm:"type:decimal(10,2);not null"`
-		Currency     string          `gorm:"size:3; not null"`
-		Images       pq.StringArray  `gorm:"type:varchar[]"`
-		CategoryID   uint            `gorm:"not null"`
-		Category     models.Category `gorm:"foreignKey:CategoryID"`
-		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
-		TotalReviews int
-		Rating       int
+		ID   uint   `gorm:"primarykey"`
+		Name string `gorm:"size:150;not null"`
+		// Description  string          `gorm:"type:text"`
 	}
 
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").
-		Select(`products.*, 
-				count(reviews.id) as total_reviews,
-				AVG(reviews.rating)::int as rating
-			`).
-		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
-		Where("name ILIKE ").
+	model = config.DB.Model(&products).
+		Select(`products.name, products.id`).
+		Joins("LEFT JOIN categories ON products.category_id = categories.id").
+		Joins("LEFT JOIN brands ON products.brand_id = brands.id").
 		Where(searchQuery).
+		Where("products.status = ? AND products.parent_id IS NULL", "published").
 		Group("products.id")
 
 	pg := paginate.New()
