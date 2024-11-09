@@ -3,7 +3,6 @@ package serializers
 import (
 	"time"
 
-	"github.com/lib/pq"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
@@ -17,13 +16,14 @@ type User struct {
 
 type Product struct {
 	gorm.Model
-	Name        string         `gorm:"size:150;not null"`
-	Description string         `gorm:"type:text"`
-	SKU         string         `gorm:"size:150;not null;unique;index"`
-	Barcode     *string        `gorm:"size:150"`
-	Price       float64        `gorm:"not null"`
-	Currency    string         `gorm:"size:3; not null"`
-	Images      pq.StringArray `gorm:"type:varchar[]"`
+	Name        string  `gorm:"size:150;not null"`
+	Description string  `gorm:"type:text"`
+	SKU         string  `gorm:"size:150;not null;unique;index"`
+	Barcode     *string `gorm:"size:150"`
+	Price       float64 `gorm:"not null"`
+	Currency    string  `gorm:"size:3; not null"`
+	Color       string
+	Size        string
 }
 
 type OrderItem struct {
