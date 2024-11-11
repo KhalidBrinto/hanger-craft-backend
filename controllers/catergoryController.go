@@ -3,12 +3,10 @@ package controllers
 import (
 	"backend/config"
 	"backend/models"
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
@@ -66,44 +64,54 @@ func GetCategories(c *gin.Context) {
 func GetNestedCategories(c *gin.Context) {
 
 	type Category struct {
-		gorm.Model
-		Name         null.String `gorm:"size:100;not null"`
-		CategoryType null.String `gorm:"size:100;not null;check:category_type IN ('parent', 'child')"`
-		ParentID     *uint
-		// Products     []Product `gorm:"foreignKey:CategoryID"`
-		SubCategory json.RawMessage
+		ID       uint        `json:"id"`
+		Name     string      `json:"name"`
+		ParentID *uint       `json:"parent_id"` // Nullable for top-level categories
+		Level    int         `json:"level"`
+		Path     []int       `json:"-"` // Path to use for ordering; ignore in JSON
+		Children []*Category `json:"children,omitempty"`
 	}
 	var categories []*Category
 
-	model := config.DB.Model(&categories).
-		Select(`categories.*, 
-				COALESCE(
-					json_agg(
-						json_build_object(
-						'ID', subcategories.id,
-						'Name', subcategories.name,
-						'ParentID', subcategories.parent_id
-						)
-					)FILTER (WHERE subcategories.id IS NOT NULL),
-            		'[]'
-				) AS sub_category
-			`).
-		Joins("LEFT JOIN categories AS subcategories ON subcategories.parent_id = categories.id").
-		Where("categories.parent_id is null").
-		Group("categories.id").
-		Find(&categories)
+	query := `
+		WITH RECURSIVE category_hierarchy AS (
+			SELECT id, name, parent_id, 1 AS level, ARRAY[id] AS path
+			FROM categories
+			WHERE parent_id IS NULL
+			UNION ALL
+			SELECT c.id, c.name, c.parent_id, ch.level + 1, ch.path || c.id
+			FROM categories c
+			JOIN category_hierarchy ch ON c.parent_id = ch.id
+		)
+		SELECT id, name, parent_id, level, path
+		FROM category_hierarchy
+		ORDER BY path;`
 
-	if model.Error != nil {
-		if errors.Is(model.Error, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"message": "No categories found"})
-			return
-
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
+	if err := config.DB.Raw(query).Scan(&categories).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, &categories)
+	buildCategoryTree := func(categories []*Category) []*Category {
+		categoryMap := make(map[uint]*Category)
+		var rootCategories []*Category
+
+		for i := range categories {
+			category := categories[i]           // Current category
+			categoryMap[category.ID] = category // Store in map
+
+			if category.ParentID == nil {
+				rootCategories = append(rootCategories, category) // Add to root if no parent
+			} else {
+				parent := categoryMap[*category.ParentID]
+				parent.Children = append(parent.Children, category) // Append to parent’s children
+			}
+		}
+
+		return rootCategories
+	}
+	nestedCategories := buildCategoryTree(categories)
+	c.JSON(http.StatusOK, nestedCategories)
 }
 
 func GetSubCategories(c *gin.Context) {

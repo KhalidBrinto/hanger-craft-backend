@@ -11,7 +11,7 @@ type Brand struct {
 	gorm.Model
 	Name      null.String `gorm:"size:100;not null"`
 	Status    *string     `gorm:"not null;check:status IN ('published', 'unpublished')"`
-	Permalink *string     `gorm:"not null"`
+	Permalink *string     `gorm:"not null;default:''"`
 	Logo      *BrandImage `gorm:"foreignKey:BrandID"`
 	Products  []Product   `gorm:"foreignKey:BrandID"`
 }
