@@ -11,7 +11,7 @@ type Order struct {
 	OrderIdentifier      string      `gorm:"type:varchar(8); not null;unique;index"`
 	UserID               uint        `gorm:"not null"`
 	User                 User        `gorm:"foreignKey:UserID"`
-	OrderStatus          string      `gorm:"size:50;not null;check:order_status IN ('pending', 'shipped', 'delivered', 'cancelled')"`
+	OrderStatus          string      `gorm:"size:50;not null;check:order_status IN ('pending', 'shipped', 'delivered', 'cancelled', 'cash_on_delivery')"`
 	Currency             *string     `gorm:"size:3; not null"`
 	TotalPrice           float64     `gorm:"type:decimal(10,2);not null"`
 	ItemPrice            float64     `gorm:"type:decimal(10,2);not null"`
