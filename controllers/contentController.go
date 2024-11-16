@@ -28,6 +28,7 @@ func AddBannerImages(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "content added successfully"})
 }
 
+// api to fetch banner contents
 func GetBannerImages(c *gin.Context) {
 	response := map[string]interface{}{
 		"left_banner":    []string{},

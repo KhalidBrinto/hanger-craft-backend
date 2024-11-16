@@ -4,7 +4,6 @@ import (
 	"backend/models"
 	"fmt"
 	"log"
-	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,11 +23,16 @@ type DatabaseConfiguration struct {
 }
 
 func ConnectDatabase() {
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASS")
-	dbHost := os.Getenv("DB_HOST")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
+	// dbUser := os.Getenv("DB_USER")
+	// dbPassword := os.Getenv("DB_PASS")
+	// dbHost := os.Getenv("DB_HOST")
+	// dbName := os.Getenv("DB_NAME")
+	// dbPort := os.Getenv("DB_PORT")
+	dbUser := "postgres"
+	dbPassword := "admin"
+	dbHost := "localhost"
+	dbName := "hanger-craft"
+	dbPort := "5433"
 
 	log.Println("Attempting to connect to db")
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", dbHost, dbUser, dbPassword, dbName, dbPort)
@@ -51,6 +55,7 @@ func ConnectDatabase() {
 		models.CartItem{},
 		models.Category{},
 		models.CategoryImage{},
+		models.ContentImage{},
 		models.Coupon{},
 		models.CouponUsageHistory{},
 		models.Inventory{},
