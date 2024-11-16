@@ -185,6 +185,7 @@ func GetProducts(c *gin.Context) {
 		Brand        Brand           `gorm:"foreignKey:BrandID"`
 		CategoryID   uint            `gorm:"not null"`
 		Category     models.Category `gorm:"foreignKey:CategoryID"`
+		Featured     bool            `gorm:"default:false"`
 		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
 		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
 		TotalReviews int
