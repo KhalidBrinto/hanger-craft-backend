@@ -50,6 +50,7 @@ func main() {
 	routes.BrandRoutes(router)
 	routes.CuponRoutes(router)
 	routes.AdminDashboardRoutes(router)
+	routes.ContentRoutes(router)
 
 	router.Run(":3000")
 }
