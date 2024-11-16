@@ -9,17 +9,28 @@ import (
 )
 
 func AddBannerImages(c *gin.Context) {
-
-	var content *models.ContentImage
+	var payload struct {
+		Position string
+		Image    []string
+	}
 
 	// Bind the incoming JSON to the Category struct
-	if err := c.BindJSON(&content); err != nil {
+	if err := c.BindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	var contents []models.ContentImage
+	for _, image := range payload.Image {
+		contents = append(contents, models.ContentImage{
+			Position: payload.Position,
+			Image:    image,
+		})
+
+	}
+
 	// Insert the category into the database
-	if err := config.DB.Create(&content).Error; err != nil {
+	if err := config.DB.Create(&contents).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
