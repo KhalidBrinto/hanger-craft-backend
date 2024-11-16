@@ -199,7 +199,7 @@ func RemoveWishlistItem(c *gin.Context) {
 	user_id := c.GetUint("user_id")
 	var wishlistItem *models.WishList
 
-	if err := config.DB.Where("id = ? AND user_id = ?", itemID, user_id).First(&wishlistItem).Error; err != nil {
+	if err := config.DB.Where("product_id = ? AND user_id = ?", itemID, user_id).First(&wishlistItem).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Wish-list item not found"})
 		return
 	}
