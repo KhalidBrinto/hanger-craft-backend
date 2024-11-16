@@ -4,6 +4,7 @@ import (
 	"backend/config"
 	"backend/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -194,10 +195,11 @@ func RemoveCartItem(c *gin.Context) {
 }
 
 func RemoveWishlistItem(c *gin.Context) {
-	itemID := c.Param("id")
+	itemID, _ := strconv.Atoi(c.Param("id"))
+	user_id := c.GetUint("user_id")
 	var wishlistItem *models.WishList
 
-	if err := config.DB.First(&wishlistItem, itemID).Error; err != nil {
+	if err := config.DB.Where("id = ? AND user_id = ?", itemID, user_id).First(&wishlistItem).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Wish-list item not found"})
 		return
 	}
