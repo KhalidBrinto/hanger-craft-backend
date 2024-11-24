@@ -12,6 +12,7 @@ func CuponRoutes(router *gin.Engine) {
 	{
 		coupon.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateCoupon)
 		coupon.GET("", controllers.GetCoupons)
+		coupon.GET("/:id", controllers.GetCoupon)
 		coupon.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateCoupon)
 		coupon.DELETE("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DeleteCoupon)
 	}

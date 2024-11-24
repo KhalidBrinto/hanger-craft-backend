@@ -7,16 +7,22 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/morkid/paginate"
 )
 
 // Get all coupons
 func GetCoupons(c *gin.Context) {
 	var coupons []models.Coupon
-	if err := config.DB.Find(&coupons).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch coupons"})
+	model := config.DB.Find(&coupons)
+	pg := paginate.New()
+	page := pg.With(model).Request(c.Request).Response(&coupons)
+
+	if page.Error {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": page.ErrorMessage})
 		return
 	}
-	c.JSON(http.StatusOK, coupons)
+
+	c.JSON(http.StatusOK, &page)
 }
 
 // Get a coupon by ID
