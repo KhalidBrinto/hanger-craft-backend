@@ -1,32 +1,28 @@
-# FROM golang:1.19-alpine3.17 as build
+##
+## STEP 1 - BUILD
+##
 
-# WORKDIR app/
-
-# COPY src/ .
-# RUN ["go", "mod", "tidy"]
-# RUN ["go", "build", "main/runner.go"]
-
-
-
-# FROM alpine:latest
-# WORKDIR /app
-# COPY --from=build /go/app/runner .
-# CMD ["./runner"]
-# EXPOSE 3000
-
-FROM golang:1.23.2-alpine3.20 as dependencies
+FROM golang:1.23.3-alpine3.20 as build
 
 WORKDIR /app
-COPY go.mod go.sum ./
 
+COPY go.mod ./
 
-RUN go mod tidy
+RUN go mod download
 
-# FROM dependencies AS build
 COPY . ./
-RUN CG0_ENABLE=0 go build -o /main -ldflags="-w -s"
 
-# FROM golang:1.19-alpine 
-# COPY --from=build /main /main
+RUN CG0_ENABLED=0 go build -o /main -ldflags="-w -s"
+
+##
+## STEP 2 - DEPLOY
+##
+
+FROM alpine:latest
+
+WORKDIR /
+COPY --from=build /main /main
+
 EXPOSE 3000
-CMD [ "/main" ]
+
+ENTRYPOINT [ "/main" ]
