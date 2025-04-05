@@ -196,7 +196,7 @@ func GetProducts(c *gin.Context) {
 	var products []*Product
 	var model *gorm.DB
 
-	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
+	model = config.DB.Debug().Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating
@@ -347,6 +347,12 @@ func GetSingleProduct(c *gin.Context) {
 		InOpen     int            `gorm:"not null"`
 	}
 
+	type Category struct {
+		CategoryID       *uint `gorm:"-"`
+		SubCategoryID    *uint `gorm:"-"`
+		SubSubCategoryID *uint `gorm:"-"`
+	}
+
 	type Variation struct {
 		ID           uint           `gorm:"primarykey"`
 		SKU          string         `gorm:"size:150;not null;unique;index"`
@@ -363,14 +369,14 @@ func GetSingleProduct(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string          `gorm:"size:150;not null"`
-		Description  string          `gorm:"type:text"`
-		SKU          string          `gorm:"size:150;not null;unique;index"`
-		Barcode      *string         `gorm:"size:150"`
-		Price        float64         `gorm:"type:decimal(10,2);not null"`
-		Currency     string          `gorm:"size:3; not null"`
-		CategoryID   uint            `gorm:"not null"`
-		Category     models.Category `gorm:"foreignKey:CategoryID"`
+		Name         string   `gorm:"size:150;not null"`
+		Description  string   `gorm:"type:text"`
+		SKU          string   `gorm:"size:150;not null;unique;index"`
+		Barcode      *string  `gorm:"size:150"`
+		Price        float64  `gorm:"type:decimal(10,2);not null"`
+		Currency     string   `gorm:"size:3; not null"`
+		CategoryID   uint     `gorm:"not null"`
+		Category     Category `gorm:"foreignKey:CategoryID"`
 		BrandID      *uint
 		Brand        Brand      `gorm:"foreignKey:BrandID"`
 		Status       *string    `gorm:"not null;check:status IN ('published', 'unpublished')"`
@@ -378,14 +384,16 @@ func GetSingleProduct(c *gin.Context) {
 		TotalReviews int
 		Rating       int
 		Variation    json.RawMessage
+		Path         pq.Int64Array         `gorm:"column:path" json:"-"`
 		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
 	}
 
 	var product *Product
 
-	model := config.DB.Model(&product).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
+	model := config.DB.Table("products").Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
+				cat_path.path,
 				AVG(reviews.rating)::int as rating,
 				COALESCE(
 					json_agg(
@@ -401,8 +409,22 @@ func GetSingleProduct(c *gin.Context) {
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Joins("LEFT JOIN products AS variations ON variations.parent_id = products.id AND variations.is_child = true").
+		Joins(`
+			LEFT JOIN (WITH RECURSIVE category_hierarchy AS (
+				SELECT id, name, parent_id, 1 AS level, ARRAY[id] AS path
+				FROM categories
+				WHERE parent_id IS NULL
+				UNION ALL
+				SELECT c.id, c.name, c.parent_id, ch.level + 1, ch.path || c.id
+				FROM categories c
+				JOIN category_hierarchy ch ON c.parent_id = ch.id
+			)
+			SELECT id, name, parent_id, level, path
+			FROM category_hierarchy
+			ORDER BY path) as cat_path on cat_path.id = products.category_id
+		`).
 		Where("products.id = ?", productID).
-		Group("products.id").
+		Group("products.id, cat_path.path").
 		First(&product)
 
 	if model.Error != nil {
@@ -413,6 +435,21 @@ func GetSingleProduct(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
 		return
+	}
+
+	for i, v := range product.Path {
+		if i == 0 {
+			categoryID := uint(v)
+			product.Category.CategoryID = &categoryID
+		}
+		if i == 1 {
+			categoryID := uint(v)
+			product.Category.SubCategoryID = &categoryID
+		}
+		if i == 2 {
+			categoryID := uint(v)
+			product.Category.SubSubCategoryID = &categoryID
+		}
 	}
 
 	c.JSON(http.StatusOK, &product)

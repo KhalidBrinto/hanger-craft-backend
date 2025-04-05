@@ -33,10 +33,26 @@ func ProductQueryParameterToMap(P Parameters) string {
 
 	if P.CategoryID != "" {
 		if querystring != "" {
-			querystring = querystring + " AND category_id IN (" + P.CategoryID + ")"
+			recursive := fmt.Sprintf(`WITH RECURSIVE category_tree AS (
+				SELECT id, parent_id FROM categories WHERE id = %s
+				UNION ALL
+				SELECT c.id, c.parent_id
+				FROM categories c
+				INNER JOIN category_tree ct ON c.parent_id = ct.id
+			)
+			SELECT id FROM category_tree`, P.CategoryID)
+			querystring = querystring + " AND category_id IN (" + recursive + ")"
 
 		} else {
-			querystring = "category_id IN (" + P.CategoryID + ")"
+			recursive := fmt.Sprintf(`WITH RECURSIVE category_tree AS (
+							SELECT id, parent_id FROM categories WHERE id = %s
+							UNION ALL
+							SELECT c.id, c.parent_id
+							FROM categories c
+							INNER JOIN category_tree ct ON c.parent_id = ct.id
+						)
+						SELECT id FROM category_tree`, P.CategoryID)
+			querystring = "category_id IN (" + recursive + ")"
 		}
 	}
 	if P.BrandID != "" {

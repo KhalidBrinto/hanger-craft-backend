@@ -1,7 +1,6 @@
 package config
 
 import (
-	"backend/models"
 	"fmt"
 	"log"
 	"os"
@@ -29,6 +28,11 @@ func ConnectDatabase() {
 	dbHost := os.Getenv("DB_HOST")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
+	// dbUser := "superuser"
+	// dbPassword := "Letmeintodb123!"
+	// dbHost := "localhost"
+	// dbName := "hanger-craft"
+	// dbPort := "5432"
 
 	log.Println("Attempting to connect to db")
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", dbHost, dbUser, dbPassword, dbName, dbPort)
@@ -45,30 +49,30 @@ func ConnectDatabase() {
 		log.Println("Database Connected Successfully !")
 	}
 	log.Println("Attempting to migrate")
-	db.AutoMigrate(
-		models.Brand{},
-		models.BrandImage{},
-		models.CartItem{},
-		models.Category{},
-		models.CategoryImage{},
-		models.ContentImage{},
-		models.Coupon{},
-		models.CouponUsageHistory{},
-		models.Inventory{},
-		models.Order{},
-		models.OrderItem{},
-		models.Payment{},
-		models.PaymentOption{},
-		models.Product{},
-		models.ProductImage{},
-		models.Review{},
-		models.ShippingAddress{},
-		models.ShoppingCart{},
-		models.ShippingOptions{},
-		models.User{},
-		models.ProductAttribute{},
-		models.WishList{},
-	)
+	// db.AutoMigrate(
+	// 	models.Brand{},
+	// 	models.BrandImage{},
+	// 	models.CartItem{},
+	// 	models.Category{},
+	// 	models.CategoryImage{},
+	// 	models.ContentImage{},
+	// 	models.Coupon{},
+	// 	models.CouponUsageHistory{},
+	// 	models.Inventory{},
+	// 	models.Order{},
+	// 	models.OrderItem{},
+	// 	models.Payment{},
+	// 	models.PaymentOption{},
+	// 	models.Product{},
+	// 	models.ProductImage{},
+	// 	models.Review{},
+	// 	models.ShippingAddress{},
+	// 	models.ShoppingCart{},
+	// 	models.ShippingOptions{},
+	// 	models.User{},
+	// 	models.ProductAttribute{},
+	// 	models.WishList{},
+	// )
 	log.Println("Finished migration")
 	DB = db
 }
