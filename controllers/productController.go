@@ -340,29 +340,12 @@ func GetTrendingProducts(c *gin.Context) {
 func GetSingleProduct(c *gin.Context) {
 	productID := c.Param("id")
 
-	type Inventory struct {
-		ProductID  uint           `gorm:"not null" json:"-"`
-		Product    models.Product `gorm:"foreignKey:ProductID" json:"-"`
-		StockLevel int            `gorm:"not null"`
-		InOpen     int            `gorm:"not null"`
-	}
-
 	type Category struct {
 		CategoryID       *uint `gorm:"-"`
 		SubCategoryID    *uint `gorm:"-"`
 		SubSubCategoryID *uint `gorm:"-"`
 	}
 
-	type Variation struct {
-		ID           uint           `gorm:"primarykey"`
-		SKU          string         `gorm:"size:150;not null;unique;index"`
-		Barcode      *string        `gorm:"size:150"`
-		Price        float64        `gorm:"type:decimal(10,2);not null"`
-		Images       pq.StringArray `gorm:"type:varchar[]"`
-		Inventory    *Inventory     `gorm:"foreignKey:ProductID"`
-		TotalReviews int
-		Rating       int
-	}
 	type Brand struct {
 		ID   uint        `gorm:"primarykey"`
 		Name null.String `gorm:"size:100;not null"`
@@ -378,19 +361,19 @@ func GetSingleProduct(c *gin.Context) {
 		CategoryID   uint     `gorm:"not null"`
 		Category     Category `gorm:"foreignKey:CategoryID"`
 		BrandID      *uint
-		Brand        Brand      `gorm:"foreignKey:BrandID"`
-		Status       *string    `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory `gorm:"foreignKey:ProductID"`
+		Brand        Brand   `gorm:"foreignKey:BrandID"`
+		Status       *string `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory    int     `gorm:"column:stock_level"`
 		TotalReviews int
 		Rating       int
 		Variation    json.RawMessage
-		Path         pq.Int64Array         `gorm:"column:path" json:"-"`
-		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
+		Path         pq.Int64Array `gorm:"column:path" json:"-"`
+		Images       []models.ProductImage
 	}
 
 	var product *Product
 
-	model := config.DB.Table("products").Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
+	model := config.DB.Table("products").Preload("Category").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				cat_path.path,
@@ -405,9 +388,11 @@ func GetSingleProduct(c *gin.Context) {
 						)
 					)FILTER (WHERE variations.id IS NOT NULL),
             		'[]'
-				) AS variation
+				) AS variation,
+				inventories.stock_level as stock_level
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
+		Joins("LEFT JOIN inventories ON products.id = inventories.product_id").
 		Joins("LEFT JOIN products AS variations ON variations.parent_id = products.id AND variations.is_child = true").
 		Joins(`
 			LEFT JOIN (WITH RECURSIVE category_hierarchy AS (
@@ -424,7 +409,7 @@ func GetSingleProduct(c *gin.Context) {
 			ORDER BY path) as cat_path on cat_path.id = products.category_id
 		`).
 		Where("products.id = ?", productID).
-		Group("products.id, cat_path.path").
+		Group("products.id, cat_path.path, inventories.stock_level").
 		First(&product)
 
 	if model.Error != nil {
@@ -433,10 +418,12 @@ func GetSingleProduct(c *gin.Context) {
 			return
 
 		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
 		return
 	}
 
+	config.DB.Model([]models.ProductImage{}).Where("product_id = ?", productID).Find(&product.Images)
 	for i, v := range product.Path {
 		if i == 0 {
 			categoryID := uint(v)
