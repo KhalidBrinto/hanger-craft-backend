@@ -9,7 +9,7 @@ import (
 type Inventory struct {
 	gorm.Model
 	ProductID  uint    `gorm:"not null"`
-	Product    Product `gorm:"foreignKey:ProductID"`
+	Product    Product `gorm:"foreignKey:ProductID" json:"-"`
 	StockLevel int     `gorm:"not null"`
 	InOpen     int     `gorm:"not null"`
 	ChangeType string  `gorm:"size:50;not null;check:change_type IN ('restock', 'purchase')"`

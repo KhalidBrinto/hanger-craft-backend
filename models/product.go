@@ -24,16 +24,18 @@ type Product struct {
 	Color       string
 	Size        string
 	BrandID     *uint
-	Brand       Brand          `gorm:"foreignKey:BrandID"`
+	Brand       Brand          `gorm:"foreignKey:BrandID;refrences:BrandID"`
 	Images      []ProductImage `gorm:"foreignKey:ProductID"`
+	Inventory   *Inventory     `gorm:"foreignKey:ProductID;references:ID"`
 }
 
 type ProductImage struct {
 	ID         uint    `gorm:"primaryKey"`
 	ProductID  uint    // Foreign key to the Product
 	Product    Product `gorm:"foreignKey:ProductID" json:"-"`
-	Image      string  `gorm:"-" json:"Image"`
-	ImageBytes []byte  `gorm:"column:image;type:bytea" json:"-"`
+	Color      *string
+	Image      string `gorm:"-" json:"Image"`
+	ImageBytes []byte `gorm:"column:image;type:bytea" json:"-"`
 }
 
 func (c *ProductImage) BeforeCreate(tx *gorm.DB) (err error) {
@@ -61,4 +63,17 @@ type ProductAttribute struct {
 	Description string  `gorm:"type:text"`
 	ProductID   uint    `gorm:"not null"`
 	Product     Product `gorm:"foreignKey:ProductID"`
+}
+
+func UniqueColors(images []ProductImage) []ProductImage {
+	seen := make(map[string]bool)
+	var result []ProductImage
+
+	for _, img := range images {
+		if !seen[*img.Color] {
+			seen[*img.Color] = true
+			result = append(result, img)
+		}
+	}
+	return result
 }

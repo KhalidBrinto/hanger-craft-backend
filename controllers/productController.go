@@ -19,8 +19,13 @@ import (
 // CreateProduct creates a new product
 func CreateProduct(c *gin.Context) {
 	type Variation struct {
-		Size  []string
-		Color []string
+		Size     string
+		Quantity int
+	}
+	type Attributes struct {
+		Image     string
+		Color     string
+		Variation []Variation
 	}
 	var payload struct {
 		Name        string  `gorm:"size:150;not null"`
@@ -38,7 +43,7 @@ func CreateProduct(c *gin.Context) {
 		Color       string
 		Size        string
 		BrandID     *uint
-		Variations  *Variation
+		Attributes  []Attributes
 		Images      []models.ProductImage `gorm:"foreignKey:ProductID"`
 	}
 
@@ -62,6 +67,12 @@ func CreateProduct(c *gin.Context) {
 		Color:       payload.Color,
 		Size:        payload.Size,
 		Images:      payload.Images,
+		Inventory: &models.Inventory{
+			StockLevel: int(payload.Stock),
+			InOpen:     0,
+			ChangeType: "restock",
+			ChangeDate: time.Now(),
+		},
 	}
 
 	if err := tx.Create(&parent).Error; err != nil {
@@ -70,15 +81,18 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	if payload.Variations != nil {
+	if len(payload.Attributes) != 0 {
 		var variations []models.Product
+		var images []models.ProductImage
 
-		for _, size := range payload.Variations.Size {
-			for _, color := range payload.Variations.Color {
+		for _, attribute := range payload.Attributes {
+
+			for _, variation := range attribute.Variation {
+
 				variations = append(variations, models.Product{
 					Name:        parent.Name,
 					Description: parent.Description,
-					SKU:         parent.SKU + "-" + size + "-" + color,
+					SKU:         parent.SKU + "-" + variation.Size + "-" + attribute.Color,
 					Barcode:     parent.Barcode,
 					Price:       parent.Price,
 					Currency:    parent.Currency,
@@ -86,12 +100,23 @@ func CreateProduct(c *gin.Context) {
 					Status:      parent.Status,
 					IsChild:     true,
 					ParentID:    &parent.ID,
-					Color:       color,
-					Size:        size,
+					Color:       attribute.Color,
+					Size:        variation.Size,
 					BrandID:     parent.BrandID,
+					Inventory: &models.Inventory{
+						StockLevel: variation.Quantity,
+						InOpen:     0,
+						ChangeType: "restock",
+						ChangeDate: time.Now(),
+					},
 				})
 
 			}
+			images = append(images, models.ProductImage{
+				ProductID: parent.ID,
+				Image:     attribute.Image,
+				Color:     &attribute.Color,
+			})
 
 		}
 
@@ -100,23 +125,12 @@ func CreateProduct(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create variations", "error": err.Error()})
 			return
 		}
+		if err := tx.Create(&images).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create Variation images", "error": err.Error()})
+			return
+		}
 
-	}
-
-	// if err := config.DB.Create(&product).Error; err != nil {
-	// 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-	if err := tx.Create(&models.Inventory{
-		ProductID:  parent.ID,
-		StockLevel: int(payload.Stock),
-		InOpen:     0,
-		ChangeType: "restock",
-		ChangeDate: time.Now(),
-	}).Error; err != nil {
-		tx.Rollback()
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
 	}
 
 	tx.Commit()
@@ -373,7 +387,7 @@ func GetSingleProduct(c *gin.Context) {
 
 	var product *Product
 
-	model := config.DB.Table("products").Preload("Category").Preload("Brand").
+	model := config.DB.Model(&models.Product{}).Preload("Category").Preload("Brand").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				cat_path.path,
@@ -438,6 +452,119 @@ func GetSingleProduct(c *gin.Context) {
 			product.Category.SubSubCategoryID = &categoryID
 		}
 	}
+
+	c.JSON(http.StatusOK, &product)
+}
+
+// GetProduct retrieves a single product by its ID
+func GetSingleProductV2(c *gin.Context) {
+	productID := c.Param("id")
+
+	type AttributeVariation struct {
+		Size     string `json:"Size"`
+		Quantity int    `json:"Quantity"`
+	}
+	type ColorMap struct {
+		Image     string               `json:"Image"`
+		Variation []AttributeVariation `json:"variation"`
+	}
+
+	type ColorGroup struct {
+		Color     string               `json:"Color"`
+		Image     string               `json:"Image"`
+		Variation []AttributeVariation `json:"variation"`
+	}
+
+	type Variation struct {
+		ID        uint              `gorm:"primarykey"`
+		SKU       string            `gorm:"size:150;not null;unique;index"`
+		Inventory *models.Inventory `gorm:"foreignKey:ProductID;references:ID"`
+		Color     string
+		Size      string
+		Images    []models.ProductImage `gorm:"foreignKey:ProductID;references:ID"`
+	}
+
+	type Product struct {
+		gorm.Model
+		Name        string          `gorm:"size:150;not null"`
+		Description string          `gorm:"type:text"`
+		SKU         string          `gorm:"size:150;not null;unique;index"`
+		Barcode     *string         `gorm:"size:150"`
+		Price       float64         `gorm:"type:decimal(10,2);not null"`
+		Currency    string          `gorm:"size:3; not null"`
+		CategoryID  uint            `gorm:"not null"`
+		Category    models.Category `gorm:"foreignKey:CategoryID"`
+		Status      *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Featured    bool            `gorm:"default:false"`
+		Stock       uint            `gorm:"-"`
+		IsChild     bool            `gorm:"default:false"`
+		ParentID    *uint
+		Color       string
+		Size        string
+		BrandID     *uint
+		Brand       models.Brand          `gorm:"foreignKey:BrandID;refrences:BrandID"`
+		Images      []models.ProductImage `gorm:"foreignKey:ProductID"`
+		Variations  []Variation           `gorm:"-" json:"-"`
+		Attributes  []ColorGroup          `gorm:"-"`
+	}
+
+	var product *Product
+	// var variations []Variation
+
+	model := config.DB.Model(&models.Product{}).Preload("Category").Preload("Brand").Preload("Images").First(&product, productID)
+
+	if model.Error != nil {
+		if errors.Is(model.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "No product found"})
+			return
+
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": model.Error.Error()})
+		return
+	}
+	config.DB.Model([]models.Product{}).Preload("Images").Preload("Inventory").Where("parent_id = ? AND is_child = true", productID).Find(&product.Variations)
+
+	config.DB.Model([]models.ProductImage{}).Where("product_id = ?", productID).Find(&product.Images)
+
+	colorMap := make(map[string]ColorMap)
+
+	for _, product := range product.Variations {
+		variation := AttributeVariation{
+			Size:     product.Size,
+			Quantity: product.Inventory.StockLevel,
+		}
+		// Get the current value (or zero value if not present)
+		colorGroup := colorMap[product.Color]
+
+		// Append the variation
+		colorGroup.Variation = append(colorGroup.Variation, variation)
+
+		// Put it back into the map
+		colorMap[product.Color] = colorGroup
+	}
+
+	for _, img := range product.Images {
+		// Get the current value (or zero value if not present)
+		colorGroup := colorMap[*img.Color]
+
+		// Append the variation
+		colorGroup.Image = img.Image
+
+		// Put it back into the map
+		colorMap[*img.Color] = colorGroup
+	}
+
+	var output []ColorGroup
+
+	for color, obj := range colorMap {
+		output = append(output, ColorGroup{
+			Color:     color,
+			Image:     obj.Image,
+			Variation: obj.Variation,
+		})
+	}
+	product.Attributes = output
 
 	c.JSON(http.StatusOK, &product)
 }
