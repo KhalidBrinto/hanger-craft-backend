@@ -461,6 +461,7 @@ func GetSingleProductV2(c *gin.Context) {
 	productID := c.Param("id")
 
 	type AttributeVariation struct {
+		ID       uint   `gorm:"primarykey"`
 		Size     string `json:"Size"`
 		Quantity int    `json:"Quantity"`
 	}
@@ -531,6 +532,7 @@ func GetSingleProductV2(c *gin.Context) {
 
 	for _, product := range product.Variations {
 		variation := AttributeVariation{
+			ID:       product.ID,
 			Size:     product.Size,
 			Quantity: product.Inventory.StockLevel,
 		}
