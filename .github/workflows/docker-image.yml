@@ -1,0 +1,34 @@
+name: Docker Image CI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+
+  build-and-push:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: khalidbrinto
+        password: dckr_pat_Z4mczoiUFL_YenN2-lhLU5dlZrE
+        
+    - name: Build the Docker image
+      run: |
+        IMAGE_NAME=khalidbrinto/hanger-craft-backend
+        TAG=${{ github.event.release.tag_name }}
+        
+        docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
+        
+    - name: Push the Docker image
+      run: |
+        IMAGE_NAME=khalidbrinto/hanger-craft-backend
+        TAG=${{ github.event.release.tag_name }}
+        
+        docker push $IMAGE_NAME:$TAG
