@@ -215,13 +215,22 @@ func GetProducts(c *gin.Context) {
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
-				EXISTS (
-							SELECT 1 
-							FROM products AS child
-							JOIN inventories ON inventories.product_id = child.id
-							WHERE child.parent_id = products.id 
-							AND inventories.stock_level > 0
-						) AS inventory_status
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 
+						FROM products AS child
+						JOIN inventories ON inventories.product_id = child.id
+						WHERE child.parent_id = products.id 
+						AND inventories.stock_level > 0
+					) THEN true
+					WHEN EXISTS (
+						SELECT 1 
+						FROM inventories 
+						WHERE inventories.product_id = products.id 
+						AND inventories.stock_level > 0
+					) THEN true
+					ELSE false
+				END AS inventory_status
 
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
@@ -282,13 +291,22 @@ func GetNewArrivalProducts(c *gin.Context) {
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
-				EXISTS (
-							SELECT 1 
-							FROM products AS child
-							JOIN inventories ON inventories.product_id = child.id
-							WHERE child.parent_id = products.id 
-							AND inventories.stock_level > 0
-						) AS inventory_status
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 
+						FROM products AS child
+						JOIN inventories ON inventories.product_id = child.id
+						WHERE child.parent_id = products.id 
+						AND inventories.stock_level > 0
+					) THEN true
+					WHEN EXISTS (
+						SELECT 1 
+						FROM inventories 
+						WHERE inventories.product_id = products.id 
+						AND inventories.stock_level > 0
+					) THEN true
+					ELSE false
+				END AS inventory_status
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Where(querstring).
@@ -349,13 +367,22 @@ func GetTrendingProducts(c *gin.Context) {
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
 				AVG(reviews.rating)::int as rating,
-				EXISTS (
-							SELECT 1 
-							FROM products AS child
-							JOIN inventories ON inventories.product_id = child.id
-							WHERE child.parent_id = products.id 
-							AND inventories.stock_level > 0
-						) AS inventory_status
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 
+						FROM products AS child
+						JOIN inventories ON inventories.product_id = child.id
+						WHERE child.parent_id = products.id 
+						AND inventories.stock_level > 0
+					) THEN true
+					WHEN EXISTS (
+						SELECT 1 
+						FROM inventories 
+						WHERE inventories.product_id = products.id 
+						AND invenstock_level > 0
+					) THEN true
+					ELSE false
+				END AS inventory_status
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Joins("LEFT JOIN order_items on products.id = order_items.product_id").

@@ -55,7 +55,7 @@ func GetWishlistByUserID(c *gin.Context) {
 	var wishList []*models.WishList
 
 	// Use Preload to load associated CartItems
-	if err := config.DB.Where("user_id = ?", userID).Preload("Product").Find(&wishList).Error; err != nil {
+	if err := config.DB.Where("user_id = ?", userID).Preload("Product").Preload("Product.Images").Find(&wishList).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "No wishlist found"})
 		} else {
