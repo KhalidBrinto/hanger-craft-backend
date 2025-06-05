@@ -189,22 +189,23 @@ func GetProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string  `gorm:"size:150;not null"`
-		Description  string  `gorm:"type:text"`
-		SKU          string  `gorm:"size:150;not null;unique;index"`
-		Barcode      *string `gorm:"size:150"`
-		Price        float64 `gorm:"type:decimal(10,2);not null"`
-		Currency     string  `gorm:"size:3; not null"`
-		BrandID      *uint
-		Brand        Brand           `gorm:"foreignKey:BrandID"`
-		CategoryID   uint            `gorm:"not null"`
-		Category     models.Category `gorm:"foreignKey:CategoryID"`
-		Featured     bool            `gorm:"default:false"`
-		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
-		TotalReviews int
-		Rating       int
-		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
+		Name            string  `gorm:"size:150;not null"`
+		Description     string  `gorm:"type:text"`
+		SKU             string  `gorm:"size:150;not null;unique;index"`
+		Barcode         *string `gorm:"size:150"`
+		Price           float64 `gorm:"type:decimal(10,2);not null"`
+		Currency        string  `gorm:"size:3; not null"`
+		BrandID         *uint
+		Brand           Brand           `gorm:"foreignKey:BrandID"`
+		CategoryID      uint            `gorm:"not null"`
+		Category        models.Category `gorm:"foreignKey:CategoryID"`
+		Featured        bool            `gorm:"default:false"`
+		Status          *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory       *Inventory      `gorm:"foreignKey:ProductID"`
+		InventoryStatus bool            `gorm:"column:inventory_status"`
+		TotalReviews    int
+		Rating          int
+		Images          []models.ProductImage `gorm:"foreignKey:ProductID"`
 	}
 
 	var products []*Product
@@ -213,7 +214,15 @@ func GetProducts(c *gin.Context) {
 	model = config.DB.Debug().Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
-				AVG(reviews.rating)::int as rating
+				AVG(reviews.rating)::int as rating,
+				EXISTS (
+							SELECT 1 
+							FROM products AS child
+							JOIN inventories ON inventories.product_id = child.id
+							WHERE child.parent_id = products.id 
+							AND inventories.stock_level > 0
+						) AS inventory_status
+
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Where(querystring).
@@ -248,21 +257,22 @@ func GetNewArrivalProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string                `gorm:"size:150;not null"`
-		Description  string                `gorm:"type:text"`
-		SKU          string                `gorm:"size:150;not null;unique;index"`
-		Barcode      *string               `gorm:"size:150"`
-		Price        float64               `gorm:"type:decimal(10,2);not null"`
-		Currency     string                `gorm:"size:3; not null"`
-		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
-		BrandID      *uint
-		Brand        Brand           `gorm:"foreignKey:BrandID"`
-		CategoryID   uint            `gorm:"not null"`
-		Category     models.Category `gorm:"foreignKey:CategoryID"`
-		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
-		TotalReviews int
-		Rating       int
+		Name            string                `gorm:"size:150;not null"`
+		Description     string                `gorm:"type:text"`
+		SKU             string                `gorm:"size:150;not null;unique;index"`
+		Barcode         *string               `gorm:"size:150"`
+		Price           float64               `gorm:"type:decimal(10,2);not null"`
+		Currency        string                `gorm:"size:3; not null"`
+		Images          []models.ProductImage `gorm:"foreignKey:ProductID"`
+		BrandID         *uint
+		Brand           Brand           `gorm:"foreignKey:BrandID"`
+		CategoryID      uint            `gorm:"not null"`
+		Category        models.Category `gorm:"foreignKey:CategoryID"`
+		Status          *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory       *Inventory      `gorm:"foreignKey:ProductID"`
+		InventoryStatus bool            `gorm:"column:inventory_status"`
+		TotalReviews    int
+		Rating          int
 	}
 
 	var products []*Product
@@ -271,7 +281,14 @@ func GetNewArrivalProducts(c *gin.Context) {
 	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
-				AVG(reviews.rating)::int as rating
+				AVG(reviews.rating)::int as rating,
+				EXISTS (
+							SELECT 1 
+							FROM products AS child
+							JOIN inventories ON inventories.product_id = child.id
+							WHERE child.parent_id = products.id 
+							AND inventories.stock_level > 0
+						) AS inventory_status
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Where(querstring).
@@ -307,21 +324,22 @@ func GetTrendingProducts(c *gin.Context) {
 	}
 	type Product struct {
 		gorm.Model
-		Name         string                `gorm:"size:150;not null"`
-		Description  string                `gorm:"type:text"`
-		SKU          string                `gorm:"size:150;not null;unique;index"`
-		Barcode      *string               `gorm:"size:150"`
-		Price        float64               `gorm:"type:decimal(10,2);not null"`
-		Currency     string                `gorm:"size:3; not null"`
-		Images       []models.ProductImage `gorm:"foreignKey:ProductID"`
-		BrandID      *uint
-		Brand        Brand           `gorm:"foreignKey:BrandID"`
-		CategoryID   uint            `gorm:"not null"`
-		Category     models.Category `gorm:"foreignKey:CategoryID"`
-		Status       *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
-		Inventory    *Inventory      `gorm:"foreignKey:ProductID"`
-		TotalReviews int
-		Rating       int
+		Name            string                `gorm:"size:150;not null"`
+		Description     string                `gorm:"type:text"`
+		SKU             string                `gorm:"size:150;not null;unique;index"`
+		Barcode         *string               `gorm:"size:150"`
+		Price           float64               `gorm:"type:decimal(10,2);not null"`
+		Currency        string                `gorm:"size:3; not null"`
+		Images          []models.ProductImage `gorm:"foreignKey:ProductID"`
+		BrandID         *uint
+		Brand           Brand           `gorm:"foreignKey:BrandID"`
+		CategoryID      uint            `gorm:"not null"`
+		Category        models.Category `gorm:"foreignKey:CategoryID"`
+		Status          *string         `gorm:"not null;check:status IN ('published', 'unpublished')"`
+		Inventory       *Inventory      `gorm:"foreignKey:ProductID"`
+		InventoryStatus bool            `gorm:"column:inventory_status"`
+		TotalReviews    int
+		Rating          int
 	}
 
 	var products []*Product
@@ -330,7 +348,14 @@ func GetTrendingProducts(c *gin.Context) {
 	model = config.DB.Model(&products).Preload("Category").Preload("Inventory").Preload("Brand").Preload("Images").
 		Select(`products.*, 
 				count(reviews.id) as total_reviews,
-				AVG(reviews.rating)::int as rating
+				AVG(reviews.rating)::int as rating,
+				EXISTS (
+							SELECT 1 
+							FROM products AS child
+							JOIN inventories ON inventories.product_id = child.id
+							WHERE child.parent_id = products.id 
+							AND inventories.stock_level > 0
+						) AS inventory_status
 			`).
 		Joins("LEFT JOIN reviews ON products.id = reviews.product_id").
 		Joins("LEFT JOIN order_items on products.id = order_items.product_id").
