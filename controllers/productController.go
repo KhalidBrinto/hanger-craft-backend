@@ -650,6 +650,95 @@ func UpdateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, product)
 }
 
+func CreateVariation(c *gin.Context) {
+	var payload struct {
+		Color    string
+		Size     string
+		Image    string
+		ParentID *uint
+		Stock    int
+	}
+
+	if err := c.BindJSON(&payload); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var parent models.Product
+	if err := config.DB.Where("id = ?", payload.ParentID).First(&parent).Error; err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	tx := config.DB.Begin()
+	variation := models.Product{
+		Name:        parent.Name,
+		Description: parent.Description,
+		SKU:         parent.SKU + "-" + payload.Size + "-" + payload.Color,
+		Barcode:     parent.Barcode,
+		Price:       parent.Price,
+		Currency:    parent.Currency,
+		CategoryID:  parent.CategoryID,
+		BrandID:     parent.BrandID,
+		IsChild:     true,
+		ParentID:    payload.ParentID,
+		Status:      parent.Status,
+		Featured:    parent.Featured,
+		Color:       payload.Color,
+		Size:        payload.Size,
+		Inventory: &models.Inventory{
+			StockLevel: int(payload.Stock),
+			InOpen:     0,
+			ChangeType: "restock",
+			ChangeDate: time.Now(),
+		},
+	}
+
+	if err := tx.Create(&variation).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create variation"})
+		return
+	}
+
+	if err := tx.Create(models.ProductImage{
+		ProductID: parent.ID,
+		Image:     payload.Image,
+		Color:     &payload.Color,
+	}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create Variation images", "error": err.Error()})
+		return
+	}
+
+	tx.Commit()
+	c.JSON(http.StatusCreated, gin.H{"message": "Variation added successfully"})
+}
+func UpdateVariation(c *gin.Context) {
+	productID := c.Param("id")
+	var product *models.Product
+
+	if err := config.DB.First(&product, productID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := config.DB.Save(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Variation added successfully"})
+}
+
 // DeleteProduct deletes a product by its ID
 func DeleteProduct(c *gin.Context) {
 	productID := c.Param("id")
@@ -670,6 +759,25 @@ func DeleteProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+}
+func DeleteVariation(c *gin.Context) {
+	productID := c.Param("id")
+	var product *models.Product
+
+	if err := config.DB.First(&product, productID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	if err := config.DB.Delete(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Variation deleted successfully"})
 }
 
 // CreateProductAttribute creates a new product attribute
