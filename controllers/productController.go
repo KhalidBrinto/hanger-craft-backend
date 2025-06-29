@@ -700,16 +700,6 @@ func CreateVariation(c *gin.Context) {
 		return
 	}
 
-	if err := tx.Create(models.ProductImage{
-		ProductID: parent.ID,
-		Image:     payload.Image,
-		Color:     &payload.Color,
-	}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create Variation images", "error": err.Error()})
-		return
-	}
-
 	tx.Commit()
 	c.JSON(http.StatusCreated, gin.H{"message": "Variation added successfully"})
 }
