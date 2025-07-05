@@ -92,7 +92,7 @@ func CreateProduct(c *gin.Context) {
 				variations = append(variations, models.Product{
 					Name:        parent.Name,
 					Description: parent.Description,
-					SKU:         parent.SKU + "-" + variation.Size + "-" + attribute.Color,
+					SKU:         parent.SKU + "-" + attribute.Color + "-" + variation.Size,
 					Barcode:     parent.Barcode,
 					Price:       parent.Price,
 					Currency:    parent.Currency,
@@ -772,7 +772,7 @@ func DeleteVariation(c *gin.Context) {
 
 // CreateProductAttribute creates a new product attribute
 func CreateProductAttribute(c *gin.Context) {
-	var productAttribute *models.ProductAttribute
+	var productAttribute *models.ProductImage
 
 	if err := c.ShouldBindJSON(&productAttribute); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -784,7 +784,7 @@ func CreateProductAttribute(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, productAttribute)
+	c.JSON(http.StatusOK, gin.H{"message": "Attribute created successfully"})
 }
 
 // GetProductAttributes retrieves all product attributes
@@ -828,19 +828,17 @@ func UpdateProductAttribute(c *gin.Context) {
 
 // DeleteProductAttribute deletes a product attribute by its ID
 func DeleteProductAttribute(c *gin.Context) {
-	attributeID := c.Param("id")
-	var productAttribute *models.ProductAttribute
+	productId := c.Param("id")
+	color := c.Query("color")
 
-	if err := config.DB.First(&productAttribute, attributeID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product attribute not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
+	if err := config.DB.Where("parent_id = ? AND is_child = true AND color = ?", productId, color).Delete(&models.Product{}).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 		return
 	}
 
-	if err := config.DB.Delete(&productAttribute).Error; err != nil {
+	if err := config.DB.Where("product_id = ? AND color = ?", productId, color).Delete(&models.ProductImage{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

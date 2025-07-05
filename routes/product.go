@@ -28,6 +28,6 @@ func ProductRoutes(router *gin.Engine) {
 		productAttributes.POST("/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.CreateProductAttribute)
 		productAttributes.GET("", controllers.GetProductAttributes)
 		productAttributes.PUT("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.UpdateProductAttribute)
-		productAttributes.DELETE("/:id/", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DeleteProductAttribute)
+		productAttributes.DELETE("/:id", middlewares.AuthMiddleware(), middlewares.CheckIfAdmin(), controllers.DeleteProductAttribute)
 	}
 }
